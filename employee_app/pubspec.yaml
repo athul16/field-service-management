@@ -1,0 +1,36 @@
+name: employee_app
+description: Field Service Platform - worker mobile app (clock in/out, availability, timesheet).
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Backend
+  supabase_flutter: ^2.5.6
+
+  # UI / UX
+  table_calendar: ^3.1.2      # simple drag-to-select availability calendar
+  image_picker: ^1.1.2        # progress photo capture on clock-out
+  intl: ^0.19.0                # date/time formatting
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Env config
+  flutter_dotenv: ^5.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
