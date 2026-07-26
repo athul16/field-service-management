@@ -15,7 +15,7 @@ class AppTheme {
     );
 
     return base.copyWith(
-      textTheme: base.textTheme.apply(fontSizeFactor: 1.05),
+      textTheme: _scaled(base.textTheme, 1.05),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size.fromHeight(56),
@@ -35,6 +35,34 @@ class AppTheme {
           const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
       ),
+    );
+  }
+
+  // TextTheme.apply(fontSizeFactor:) asserts if any style has a null
+  // fontSize, which the default Material3 TextTheme can. Scale manually,
+  // skipping styles (or the fontSize component) that are null.
+  static TextTheme _scaled(TextTheme theme, double factor) {
+    TextStyle? scale(TextStyle? style) {
+      if (style?.fontSize == null) return style;
+      return style!.copyWith(fontSize: style.fontSize! * factor);
+    }
+
+    return theme.copyWith(
+      displayLarge: scale(theme.displayLarge),
+      displayMedium: scale(theme.displayMedium),
+      displaySmall: scale(theme.displaySmall),
+      headlineLarge: scale(theme.headlineLarge),
+      headlineMedium: scale(theme.headlineMedium),
+      headlineSmall: scale(theme.headlineSmall),
+      titleLarge: scale(theme.titleLarge),
+      titleMedium: scale(theme.titleMedium),
+      titleSmall: scale(theme.titleSmall),
+      bodyLarge: scale(theme.bodyLarge),
+      bodyMedium: scale(theme.bodyMedium),
+      bodySmall: scale(theme.bodySmall),
+      labelLarge: scale(theme.labelLarge),
+      labelMedium: scale(theme.labelMedium),
+      labelSmall: scale(theme.labelSmall),
     );
   }
 }
