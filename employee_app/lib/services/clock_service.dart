@@ -69,7 +69,7 @@ class ClockService {
     final row = await _client
         .from('shifts')
         .update({
-          'clock_out_at': DateTime.now().toIso8601String(),
+          'clock_out_at': DateTime.now().toUtc().toIso8601String(),
           'clock_out_photo_url': photoUrl,
           'status': 'completed',
         })

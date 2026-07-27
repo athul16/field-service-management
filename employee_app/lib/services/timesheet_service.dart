@@ -23,8 +23,8 @@ class TimesheetService {
         .select()
         .eq('worker_id', _workerId)
         .eq('status', 'completed')
-        .gte('clock_in_at', weekStart.toIso8601String())
-        .lt('clock_in_at', weekEnd.toIso8601String())
+        .gte('clock_in_at', weekStart.toUtc().toIso8601String())
+        .lt('clock_in_at', weekEnd.toUtc().toIso8601String())
         .order('clock_in_at');
 
     return (rows as List).map((row) => Shift.fromMap(row)).toList();

@@ -88,9 +88,9 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
                         final worked = shift.workedDuration!;
                         return Card(
                           child: ListTile(
-                            title: Text(_dayLabel(shift.clockInAt)),
+                            title: Text(_dayLabel(shift.clockInAt.toLocal())),
                             subtitle: Text(
-                              '${_timeLabel(shift.clockInAt)} – ${_timeLabel(shift.clockOutAt!)}',
+                              '${_timeLabel(shift.clockInAt.toLocal())} – ${_timeLabel(shift.clockOutAt!.toLocal())}',
                             ),
                             trailing: Text('${worked.inHours}h ${worked.inMinutes % 60}m'),
                           ),

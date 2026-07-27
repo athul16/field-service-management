@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ class ClockScreen extends StatefulWidget {
 class _ClockScreenState extends State<ClockScreen> {
   final _clockService = ClockService();
   final _imagePicker = ImagePicker();
+  Timer? _elapsedTicker;
 
   bool _loading = true;
   bool _submitting = false;
@@ -30,6 +32,17 @@ class _ClockScreenState extends State<ClockScreen> {
   void initState() {
     super.initState();
     _load();
+    // Elapsed time is computed from DateTime.now() at build time, so
+    // re-triggering a build every 30s is what keeps it ticking on screen.
+    _elapsedTicker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (_activeShift != null) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _elapsedTicker?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -153,6 +166,7 @@ class _ClockScreenState extends State<ClockScreen> {
     final elapsed = DateTime.now().difference(shift.clockInAt);
     final hours = elapsed.inHours;
     final minutes = elapsed.inMinutes % 60;
+    final localClockIn = shift.clockInAt.toLocal();
 
     return [
       Card(
@@ -164,7 +178,7 @@ class _ClockScreenState extends State<ClockScreen> {
             children: [
               const Text('You are clocked in', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              Text('Started at ${shift.clockInAt.hour.toString().padLeft(2, '0')}:${shift.clockInAt.minute.toString().padLeft(2, '0')}'),
+              Text('Started at ${localClockIn.hour.toString().padLeft(2, '0')}:${localClockIn.minute.toString().padLeft(2, '0')}'),
               Text('Elapsed: ${hours}h ${minutes}m'),
             ],
           ),

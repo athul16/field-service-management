@@ -64,4 +64,9 @@ supabase db push
 
 ## Status
 
-🚧 Early build. Employee app scaffold and initial database schema are in progress. Owner dashboard has not been started yet.
+🚧 Early build. Verified end-to-end on the Android emulator against the live Supabase project: registration, login, clock-in, and clock-out (with progress photo) all work. Owner dashboard has not been started yet.
+
+Since the initial scaffold:
+- Added the `shift-photos` storage bucket and its RLS upload policy ([`0003_create_shift_photos_bucket.sql`](supabase/migrations/0003_create_shift_photos_bucket.sql)) — clock-out photo uploads need it and no earlier migration created it.
+- Fixed several UTC/local-time bugs: clock-out was sending a naive local timestamp that Postgres read as UTC, tripping a "clock-out before clock-in" check constraint; the "Started at" time on the Clock screen and both fields on the Timesheet screen were displaying raw UTC instead of local time; and the Timesheet's "this week" query had the same local/UTC mismatch on its date-range filter.
+- Added a live-updating elapsed-time counter on the Clock In/Out screen — it now ticks on its own every 30 seconds instead of only refreshing when the screen re-rendered for an unrelated reason.
