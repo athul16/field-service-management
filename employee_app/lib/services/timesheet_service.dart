@@ -1,7 +1,11 @@
 import '../core/api_client.dart';
 import '../models/shift.dart';
 
-/// Computes weekly hours from completed shifts for the timesheet screen.
+/// Computes weekly/monthly hours from completed shifts for the timesheet
+/// screen. The backend endpoint is a plain date-range query (`/api/timesheet/week`
+/// with a `weekStart`/`weekEnd` pair) — it doesn't actually care whether that
+/// range spans a week or a month, so both views reuse it as-is rather than
+/// needing a separate backend endpoint.
 class TimesheetService {
   final _client = ApiClient.instance;
 
@@ -9,10 +13,20 @@ class TimesheetService {
   Future<List<Shift>> fetchShiftsForWeek(DateTime anyDayInWeek) async {
     final weekStart = _startOfWeek(anyDayInWeek);
     final weekEnd = weekStart.add(const Duration(days: 7));
+    return _fetchShifts(weekStart, weekEnd);
+  }
 
+  /// Completed shifts for the calendar month containing [anyDayInMonth].
+  Future<List<Shift>> fetchShiftsForMonth(DateTime anyDayInMonth) async {
+    final monthStart = DateTime(anyDayInMonth.year, anyDayInMonth.month);
+    final monthEnd = DateTime(anyDayInMonth.year, anyDayInMonth.month + 1);
+    return _fetchShifts(monthStart, monthEnd);
+  }
+
+  Future<List<Shift>> _fetchShifts(DateTime rangeStart, DateTime rangeEnd) async {
     final response = await _client.get('/api/timesheet/week', query: {
-      'weekStart': weekStart.toUtc().toIso8601String(),
-      'weekEnd': weekEnd.toUtc().toIso8601String(),
+      'weekStart': rangeStart.toUtc().toIso8601String(),
+      'weekEnd': rangeEnd.toUtc().toIso8601String(),
     }) as Map<String, dynamic>;
 
     final shifts = response['shifts'] as List;
