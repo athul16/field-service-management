@@ -22,7 +22,7 @@ class _HomeShellState extends State<HomeShell> {
     TimesheetScreen(),
   ];
 
-  static const _titles = ['Attendance', 'Availability', 'Timesheet'];
+  static const _titles = ['Shift', 'Availability', 'Timesheet'];
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +42,7 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.access_time), label: 'Attendance'),
+          NavigationDestination(icon: Icon(Icons.access_time), label: 'Shift'),
           NavigationDestination(icon: Icon(Icons.calendar_month), label: 'Availability'),
           NavigationDestination(icon: Icon(Icons.receipt_long), label: 'Timesheet'),
         ],

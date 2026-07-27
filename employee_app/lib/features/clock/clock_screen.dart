@@ -79,7 +79,7 @@ class _ClockScreenState extends State<ClockScreen> {
       final shift = await _clockService.clockIn(_selectedSite!.id);
       setState(() => _activeShift = shift);
     } catch (e) {
-      setState(() => _error = 'Could not clock in. Try again.');
+      setState(() => _error = 'Could not start shift. Try again.');
     } finally {
       setState(() => _submitting = false);
     }
@@ -107,7 +107,7 @@ class _ClockScreenState extends State<ClockScreen> {
       );
       setState(() => _activeShift = null);
     } catch (e) {
-      setState(() => _error = 'Could not clock out. Try again.');
+      setState(() => _error = 'Could not end shift. Try again.');
     } finally {
       setState(() => _submitting = false);
     }
@@ -195,7 +195,7 @@ class _ClockScreenState extends State<ClockScreen> {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => setState(() => _selectedSite = site),
+          onTap: () => setState(() => _selectedSite = selected ? null : site),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -248,6 +248,12 @@ class _ClockScreenState extends State<ClockScreen> {
     final minutes = elapsed.inMinutes % 60;
     final localClockIn = shift.clockInAt.toLocal();
 
+    // The active shift only carries a siteId/siteName — cross-reference the
+    // already-fetched assigned-sites list to also show the project name,
+    // rather than adding a new backend field just for this display.
+    final site = _sites.where((s) => s.id == shift.siteId).firstOrNull;
+    final projectName = site?.projectName;
+
     return [
       Card(
         color: Colors.green.shade50,
@@ -263,10 +269,18 @@ class _ClockScreenState extends State<ClockScreen> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'You are clocked in',
+                'Shift in progress',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center,
               ),
+              if (shift.siteName != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  projectName != null ? '${shift.siteName} · $projectName' : shift.siteName!,
+                  style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
+                  textAlign: TextAlign.center,
+                ),
+              ],
               const SizedBox(height: 12),
               Text(
                 '${hours}h ${minutes}m',
@@ -289,7 +303,7 @@ class _ClockScreenState extends State<ClockScreen> {
           const SizedBox(width: 8),
           Flexible(
             child: Text(
-              'Clocking out needs a quick photo of your work.',
+              'Ending your shift needs a quick photo of your work.',
               style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
               textAlign: TextAlign.center,
             ),
