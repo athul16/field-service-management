@@ -225,6 +225,11 @@ class _ClockScreenState extends State<ClockScreen> {
                           style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                         ),
                       ],
+                      const SizedBox(height: 4),
+                      Text(
+                        site.address,
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      ),
                     ],
                   ),
                 ),
@@ -280,6 +285,14 @@ class _ClockScreenState extends State<ClockScreen> {
                   style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
                   textAlign: TextAlign.center,
                 ),
+                if (site?.address != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    site!.address,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ],
               const SizedBox(height: 12),
               Text(
