@@ -36,11 +36,11 @@ public class AssignmentService {
 
     @Transactional
     public AssignmentResponse createAssignment(CreateAssignmentRequest request, Profile assignedBy) {
+        // A project's site is fixed at creation, so the assignment's site is always derived from
+        // the project here — never accepted from the caller — eliminating the mismatched-pair
+        // bug class that existed before the Site/Project inversion.
         Project project = projectService.getProjectOrThrow(request.projectId());
-        Site site = siteService.getSiteOrThrow(request.siteId());
-        if (!site.getProjectId().equals(project.getId())) {
-            throw new IllegalArgumentException("That site does not belong to that project");
-        }
+        Site site = siteService.getSiteOrThrow(project.getSiteId());
         Profile worker = profileRepository.findById(request.workerId())
                 .orElseThrow(() -> new NotFoundException("No worker found with that id"));
 

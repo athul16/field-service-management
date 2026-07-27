@@ -16,8 +16,8 @@ public class SiteRepository {
     private static final RowMapper<Site> ROW_MAPPER = (rs, rowNum) -> {
         Site site = new Site();
         site.setId(rs.getObject("id", UUID.class));
-        site.setProjectId(rs.getObject("project_id", UUID.class));
         site.setName(rs.getString("name"));
+        site.setCompanyName(rs.getString("company_name"));
         site.setAddress(rs.getString("address"));
         site.setLatitude((Double) rs.getObject("latitude"));
         site.setLongitude((Double) rs.getObject("longitude"));
@@ -25,15 +25,13 @@ public class SiteRepository {
         return site;
     };
 
-    /** Joins to projects for project_name — used by the "list sites for display" reads, not single-row CRUD. */
     private static final RowMapper<SiteResponse> RESPONSE_ROW_MAPPER = (rs, rowNum) -> new SiteResponse(
             rs.getObject("id", UUID.class),
             rs.getString("name"),
+            rs.getString("company_name"),
             rs.getString("address"),
             (Double) rs.getObject("latitude"),
-            (Double) rs.getObject("longitude"),
-            rs.getObject("project_id", UUID.class),
-            rs.getString("project_name"));
+            (Double) rs.getObject("longitude"));
 
     private final NamedParameterJdbcTemplate jdbc;
 
@@ -47,17 +45,8 @@ public class SiteRepository {
                 .findFirst();
     }
 
-    public List<SiteResponse> findResponsesByProjectId(UUID projectId) {
-        return jdbc.query(
-                """
-                select s.*, p.name as project_name
-                from sites s
-                join projects p on p.id = s.project_id
-                where s.project_id = :projectId
-                order by s.name
-                """,
-                new MapSqlParameterSource("projectId", projectId),
-                RESPONSE_ROW_MAPPER);
+    public List<SiteResponse> findAll() {
+        return jdbc.query("select * from sites order by company_name, name", RESPONSE_ROW_MAPPER);
     }
 
     public Site insert(Site site) {
@@ -66,13 +55,13 @@ public class SiteRepository {
         }
         jdbc.update(
                 """
-                insert into sites (id, project_id, name, address, latitude, longitude)
-                values (:id, :projectId, :name, :address, :latitude, :longitude)
+                insert into sites (id, name, company_name, address, latitude, longitude)
+                values (:id, :name, :companyName, :address, :latitude, :longitude)
                 """,
                 new MapSqlParameterSource()
                         .addValue("id", site.getId())
-                        .addValue("projectId", site.getProjectId())
                         .addValue("name", site.getName())
+                        .addValue("companyName", site.getCompanyName())
                         .addValue("address", site.getAddress())
                         .addValue("latitude", site.getLatitude())
                         .addValue("longitude", site.getLongitude()));

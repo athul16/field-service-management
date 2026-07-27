@@ -8,8 +8,8 @@ public class Project {
 
     private UUID id;
     private UUID ownerId;
+    private UUID siteId;
     private String name;
-    private String location;
     private LocalDate startDate;
     private LocalDate endDate;
     private String status = "active";
@@ -31,20 +31,23 @@ public class Project {
         this.ownerId = ownerId;
     }
 
+    // A project's site is fixed at creation and never re-pointed — nothing in the DB enforces
+    // this, so don't add an endpoint/setter path that lets a project's site change after insert
+    // (assignments derive their site_id from this at creation time and would silently drift).
+    public UUID getSiteId() {
+        return siteId;
+    }
+
+    public void setSiteId(UUID siteId) {
+        this.siteId = siteId;
+    }
+
     public String getName() {
         return name;
     }
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
     }
 
     public LocalDate getStartDate() {

@@ -5,16 +5,15 @@ import com.fieldservice.backend.dto.SiteResponse;
 import com.fieldservice.backend.service.SiteService;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api/owner/sites")
 @PreAuthorize("hasRole('OWNER')")
 public class OwnerSiteController {
 
@@ -24,13 +23,13 @@ public class OwnerSiteController {
         this.siteService = siteService;
     }
 
-    @PostMapping("/api/owner/projects/{projectId}/sites")
-    public SiteResponse createSite(@PathVariable UUID projectId, @Valid @RequestBody CreateSiteRequest request) {
-        return siteService.createSite(projectId, request);
+    @PostMapping
+    public SiteResponse createSite(@Valid @RequestBody CreateSiteRequest request) {
+        return siteService.createSite(request);
     }
 
-    @GetMapping("/api/owner/sites")
-    public List<SiteResponse> listSites(@RequestParam UUID projectId) {
-        return siteService.listSites(projectId);
+    @GetMapping
+    public List<SiteResponse> listSites() {
+        return siteService.listSites();
     }
 }

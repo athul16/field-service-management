@@ -1,19 +1,19 @@
 package com.fieldservice.backend.dto;
 
-import com.fieldservice.backend.entity.Project;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/**
+ * No .from(Entity) factory — siteName only exists via a join to sites, not a projects column, so
+ * every read comes from a repository RowMapper that joins and constructs this record directly.
+ */
 public record ProjectResponse(
-        UUID id, String name, String location, LocalDate startDate, LocalDate endDate, String status, UUID ownerId) {
-    public static ProjectResponse from(Project project) {
-        return new ProjectResponse(
-                project.getId(),
-                project.getName(),
-                project.getLocation(),
-                project.getStartDate(),
-                project.getEndDate(),
-                project.getStatus(),
-                project.getOwnerId());
-    }
+        UUID id,
+        String name,
+        LocalDate startDate,
+        LocalDate endDate,
+        String status,
+        UUID ownerId,
+        UUID siteId,
+        String siteName) {
 }

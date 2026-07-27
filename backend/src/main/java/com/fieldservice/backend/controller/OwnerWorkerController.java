@@ -1,8 +1,12 @@
 package com.fieldservice.backend.controller;
 
+import com.fieldservice.backend.dto.AssignmentResponse;
+import com.fieldservice.backend.dto.AvailabilitySlotResponse;
 import com.fieldservice.backend.dto.CreateWorkerRequest;
+import com.fieldservice.backend.dto.CreateWorkerResponse;
 import com.fieldservice.backend.dto.ProfileResponse;
 import com.fieldservice.backend.dto.SetPinRequest;
+import com.fieldservice.backend.dto.SetPinResponse;
 import com.fieldservice.backend.service.OwnerWorkerService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -27,17 +31,27 @@ public class OwnerWorkerController {
     }
 
     @PostMapping
-    public ProfileResponse createWorker(@Valid @RequestBody CreateWorkerRequest request) {
+    public CreateWorkerResponse createWorker(@Valid @RequestBody CreateWorkerRequest request) {
         return ownerWorkerService.createWorker(request);
     }
 
     @PostMapping("/{id}/pin")
-    public void setPin(@PathVariable UUID id, @Valid @RequestBody SetPinRequest request) {
-        ownerWorkerService.setPin(id, request.pin());
+    public SetPinResponse setPin(@PathVariable UUID id, @Valid @RequestBody SetPinRequest request) {
+        return ownerWorkerService.setPin(id, request.pin());
     }
 
     @GetMapping
     public List<ProfileResponse> listWorkers() {
         return ownerWorkerService.listWorkers();
+    }
+
+    @GetMapping("/{id}/availability")
+    public List<AvailabilitySlotResponse> getAvailability(@PathVariable UUID id) {
+        return ownerWorkerService.getAvailability(id);
+    }
+
+    @GetMapping("/{id}/assignments")
+    public List<AssignmentResponse> getAssignments(@PathVariable UUID id) {
+        return ownerWorkerService.getAssignments(id);
     }
 }

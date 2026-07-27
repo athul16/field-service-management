@@ -218,13 +218,6 @@ class _ClockScreenState extends State<ClockScreen> {
                         site.name,
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                       ),
-                      if (site.projectName != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          site.projectName!,
-                          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                        ),
-                      ],
                       const SizedBox(height: 4),
                       Text(
                         site.address,
@@ -253,11 +246,7 @@ class _ClockScreenState extends State<ClockScreen> {
     final minutes = elapsed.inMinutes % 60;
     final localClockIn = shift.clockInAt.toLocal();
 
-    // The active shift only carries a siteId/siteName — cross-reference the
-    // already-fetched assigned-sites list to also show the project name,
-    // rather than adding a new backend field just for this display.
     final site = _sites.where((s) => s.id == shift.siteId).firstOrNull;
-    final projectName = site?.projectName;
 
     return [
       Card(
@@ -281,7 +270,7 @@ class _ClockScreenState extends State<ClockScreen> {
               if (shift.siteName != null) ...[
                 const SizedBox(height: 4),
                 Text(
-                  projectName != null ? '${shift.siteName} · $projectName' : shift.siteName!,
+                  shift.siteName!,
                   style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
                   textAlign: TextAlign.center,
                 ),

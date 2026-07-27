@@ -6,8 +6,8 @@ import java.util.UUID;
 public class Site {
 
     private UUID id;
-    private UUID projectId;
     private String name;
+    private String companyName;
     private String address;
     private Double latitude;
     private Double longitude;
@@ -21,12 +21,12 @@ public class Site {
         this.id = id;
     }
 
-    public UUID getProjectId() {
-        return projectId;
+    public String getCompanyName() {
+        return companyName;
     }
 
-    public void setProjectId(UUID projectId) {
-        this.projectId = projectId;
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
     }
 
     public String getName() {

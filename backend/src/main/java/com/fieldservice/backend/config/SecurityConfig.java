@@ -4,6 +4,7 @@ import com.fieldservice.backend.security.JsonAuthenticationEntryPoint;
 import com.fieldservice.backend.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -29,10 +30,11 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter,
             JsonAuthenticationEntryPoint jsonAuthenticationEntryPoint) throws Exception {
         http
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/ping", "/photos/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/ping", "/photos/**", "/error").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(formLogin -> formLogin.disable())

@@ -23,15 +23,13 @@ public class AssignmentRepository {
             rs.getString("worker_name"),
             rs.getTimestamp("assigned_at").toInstant());
 
-    /** Joins to projects for project_name — used for the "list sites for display" read, not single-row CRUD. */
     private static final RowMapper<SiteResponse> SITE_RESPONSE_ROW_MAPPER = (rs, rowNum) -> new SiteResponse(
             rs.getObject("id", UUID.class),
             rs.getString("name"),
+            rs.getString("company_name"),
             rs.getString("address"),
             (Double) rs.getObject("latitude"),
-            (Double) rs.getObject("longitude"),
-            rs.getObject("project_id", UUID.class),
-            rs.getString("project_name"));
+            (Double) rs.getObject("longitude"));
 
     private final NamedParameterJdbcTemplate jdbc;
 
@@ -113,12 +111,11 @@ public class AssignmentRepository {
     public List<SiteResponse> findDistinctSitesForWorker(UUID workerId) {
         return jdbc.query(
                 """
-                select s.id, s.project_id, s.name, s.address, s.latitude, s.longitude, p.name as project_name
+                select s.id, s.name, s.company_name, s.address, s.latitude, s.longitude
                 from assignments a
                 join sites s on s.id = a.site_id
-                join projects p on p.id = s.project_id
                 where a.worker_id = :workerId
-                group by s.id, s.project_id, s.name, s.address, s.latitude, s.longitude, p.name
+                group by s.id, s.name, s.company_name, s.address, s.latitude, s.longitude
                 order by s.name
                 """,
                 new MapSqlParameterSource("workerId", workerId),

@@ -1,0 +1,122 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../api/client';
+import { PinRevealModal } from '../components/PinRevealModal';
+
+export function WorkersPage() {
+  const [workers, setWorkers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [pinReveal, setPinReveal] = useState(null); // { workerName, pin }
+
+  useEffect(() => {
+    loadWorkers();
+  }, []);
+
+  async function loadWorkers() {
+    setLoading(true);
+    try {
+      setWorkers(await api.get('/api/owner/workers'));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>Workers</h1>
+        <button className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? 'Cancel' : 'New Worker'}
+        </button>
+      </div>
+
+      {showForm && (
+        <CreateWorkerForm
+          onCreated={(result) => {
+            setShowForm(false);
+            setPinReveal({ workerName: result.profile.fullName, pin: result.pin });
+            loadWorkers();
+          }}
+        />
+      )}
+
+      {error && <p className="error">{error}</p>}
+      {loading ? (
+        <p className="muted">Loading…</p>
+      ) : workers.length === 0 ? (
+        <p className="muted">No workers yet. Create one to get started.</p>
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Phone</th>
+            </tr>
+          </thead>
+          <tbody>
+            {workers.map((worker) => (
+              <tr key={worker.id}>
+                <td>
+                  <Link to={`/workers/${worker.id}`}>{worker.fullName}</Link>
+                </td>
+                <td>{worker.phone}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {pinReveal && (
+        <PinRevealModal
+          workerName={pinReveal.workerName}
+          pin={pinReveal.pin}
+          onClose={() => setPinReveal(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CreateWorkerForm({ onCreated }) {
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      // No pin field — the backend generates one and returns it once.
+      const result = await api.post('/api/owner/workers', { fullName, phone });
+      onCreated(result);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form className="card form-card" onSubmit={handleSubmit}>
+      <label>
+        Full name
+        <input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+      </label>
+      <label>
+        Phone number
+        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+      </label>
+      <p className="muted">A 6-digit login PIN will be generated automatically and shown once.</p>
+      {error && <p className="error">{error}</p>}
+      <button type="submit" className="btn btn-primary" disabled={submitting}>
+        {submitting ? 'Creating…' : 'Create Worker'}
+      </button>
+    </form>
+  );
+}

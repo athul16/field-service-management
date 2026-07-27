@@ -2,7 +2,6 @@ package com.fieldservice.backend.service;
 
 import com.fieldservice.backend.dto.CreateSiteRequest;
 import com.fieldservice.backend.dto.SiteResponse;
-import com.fieldservice.backend.entity.Project;
 import com.fieldservice.backend.entity.Site;
 import com.fieldservice.backend.exception.NotFoundException;
 import com.fieldservice.backend.repository.SiteRepository;
@@ -15,36 +14,27 @@ import org.springframework.transaction.annotation.Transactional;
 public class SiteService {
 
     private final SiteRepository siteRepository;
-    private final ProjectService projectService;
 
-    public SiteService(SiteRepository siteRepository, ProjectService projectService) {
+    public SiteService(SiteRepository siteRepository) {
         this.siteRepository = siteRepository;
-        this.projectService = projectService;
     }
 
     @Transactional
-    public SiteResponse createSite(UUID projectId, CreateSiteRequest request) {
-        Project project = projectService.getProjectOrThrow(projectId);
+    public SiteResponse createSite(CreateSiteRequest request) {
         Site site = new Site();
-        site.setProjectId(project.getId());
         site.setName(request.name());
+        site.setCompanyName(request.companyName());
         site.setAddress(request.address());
         site.setLatitude(request.latitude());
         site.setLongitude(request.longitude());
         Site saved = siteRepository.insert(site);
         return new SiteResponse(
-                saved.getId(),
-                saved.getName(),
-                saved.getAddress(),
-                saved.getLatitude(),
-                saved.getLongitude(),
-                project.getId(),
-                project.getName());
+                saved.getId(), saved.getName(), saved.getCompanyName(), saved.getAddress(), saved.getLatitude(), saved.getLongitude());
     }
 
     @Transactional(readOnly = true)
-    public List<SiteResponse> listSites(UUID projectId) {
-        return siteRepository.findResponsesByProjectId(projectId);
+    public List<SiteResponse> listSites() {
+        return siteRepository.findAll();
     }
 
     public Site getSiteOrThrow(UUID siteId) {
