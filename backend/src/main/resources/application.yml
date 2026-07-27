@@ -32,6 +32,22 @@ spring:
       max-request-size: 10MB
 
 app:
+  phone:
+    # Every phone number in this system is stored as a complete E.164 string
+    # (e.g. +14155552671) — this list is the single source of truth both
+    # frontends fetch via GET /api/config to render a country-code selector
+    # and validate against. Add a country by adding an entry here; no code
+    # change needed on either frontend or the backend.
+    default-country: US
+    countries:
+      - iso2: US
+        name: United States
+        dial-code: "+1"
+        national-length: 10
+      - iso2: IN
+        name: India
+        dial-code: "+91"
+        national-length: 10
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:4173}
   jwt:

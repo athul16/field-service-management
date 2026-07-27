@@ -17,15 +17,30 @@ public class AuthService {
     private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final PhoneNumberService phoneNumberService;
 
-    public AuthService(ProfileRepository profileRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(
+            ProfileRepository profileRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            PhoneNumberService phoneNumberService) {
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.phoneNumberService = phoneNumberService;
     }
 
     public LoginResponse login(LoginRequest request) {
-        Profile profile = profileRepository.findByPhone(request.phone())
+        // An unrecognized/malformed phone is just as much "invalid credentials" to the caller
+        // as a wrong PIN — don't leak phone-format validation detail on a login attempt.
+        String phone;
+        try {
+            phone = phoneNumberService.normalize(request.phone());
+        } catch (IllegalArgumentException e) {
+            throw new BadCredentialsException("Invalid phone number or PIN");
+        }
+
+        Profile profile = profileRepository.findByPhone(phone)
                 .orElseThrow(() -> new BadCredentialsException("Invalid phone number or PIN"));
 
         if (profile.getPinHash() == null || !passwordEncoder.matches(request.pin(), profile.getPinHash())) {

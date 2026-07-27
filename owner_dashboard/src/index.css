@@ -257,6 +257,21 @@ select:focus {
   border-color: var(--primary);
 }
 
+.phone-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.phone-input-row select {
+  flex: 0 0 auto;
+  width: 90px;
+}
+
+.phone-input-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;

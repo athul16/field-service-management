@@ -1,21 +1,28 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { buildE164, PhoneInput, usePhoneCountries } from '../components/PhoneInput';
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
+  const { countries, defaultCountry } = usePhoneCountries();
+  const [iso2, setIso2] = useState('');
+  const [number, setNumber] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (defaultCountry && !iso2) setIso2(defaultCountry);
+  }, [defaultCountry]);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await login(phone, pin);
+      await login(buildE164(countries, iso2, number), pin);
       navigate('/projects', { replace: true });
     } catch (err) {
       setError(err.message);
@@ -32,11 +39,12 @@ export function LoginPage() {
 
         <label>
           Phone number
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
+          <PhoneInput
+            countries={countries}
+            iso2={iso2}
+            onIso2Change={setIso2}
+            number={number}
+            onNumberChange={setNumber}
             autoFocus
           />
         </label>

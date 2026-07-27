@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
+import '../../models/phone_country.dart';
 import '../../services/auth_service.dart';
+import '../../services/config_service.dart';
 
-/// Worker login: phone number + PIN, set up for them by the owner.
+/// Worker login: country code + phone number + PIN, set up for them by the owner.
 /// There is no self-registration — accounts are created and PINs are
 /// issued from the owner dashboard.
 class LoginScreen extends StatefulWidget {
@@ -15,15 +17,44 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _authService = AuthService();
+  final _configService = ConfigService();
   final _phoneController = TextEditingController();
   final _pinController = TextEditingController();
 
+  List<PhoneCountry> _countries = [];
+  PhoneCountry? _selectedCountry;
   bool _loading = false;
   String? _error;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    try {
+      final (countries, defaultCountry) = await _configService.getPhoneConfig();
+      setState(() {
+        _countries = countries;
+        _selectedCountry =
+            countries.where((c) => c.iso2 == defaultCountry).firstOrNull ?? countries.firstOrNull;
+      });
+    } catch (_) {
+      // Non-fatal — the country dropdown just stays empty; login itself will
+      // still fail clearly if the phone can't be assembled.
+    }
+  }
+
   Future<void> _logIn() async {
-    if (_phoneController.text.trim().length < 7) {
-      setState(() => _error = 'Enter a valid phone number.');
+    final country = _selectedCountry;
+    final digits = _phoneController.text.trim();
+    if (country == null) {
+      setState(() => _error = 'Could not load country codes. Check your connection and try again.');
+      return;
+    }
+    if (digits.length != country.nationalLength) {
+      setState(() => _error = 'Enter a ${country.nationalLength}-digit phone number for ${country.name}.');
       return;
     }
     if (_pinController.text.trim().isEmpty) {
@@ -36,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       await _authService.signInWithPin(
-        phone: _phoneController.text.trim(),
+        phone: '${country.dialCode}$digits',
         pin: _pinController.text.trim(),
       );
       // AuthGate listens for the token and will swap to HomeShell.
@@ -61,13 +92,33 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const Text('Enter your phone number and PIN', style: TextStyle(fontSize: 16)),
               const SizedBox(height: 20),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Phone number',
-                  hintText: '9876543210',
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 110,
+                    child: DropdownButtonFormField<PhoneCountry>(
+                      initialValue: _selectedCountry,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Code'),
+                      items: _countries
+                          .map((c) => DropdownMenuItem(value: c, child: Text('${c.dialCode} ${c.iso2}')))
+                          .toList(),
+                      onChanged: (value) => setState(() => _selectedCountry = value),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Phone number',
+                        hintText: _selectedCountry != null ? '0' * _selectedCountry!.nationalLength : null,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               TextField(

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { PinRevealModal } from '../components/PinRevealModal';
+import { buildE164, PhoneInput, usePhoneCountries } from '../components/PhoneInput';
 
 export function WorkersPage() {
   const [workers, setWorkers] = useState([]);
@@ -82,10 +83,16 @@ export function WorkersPage() {
 }
 
 function CreateWorkerForm({ onCreated }) {
+  const { countries, defaultCountry } = usePhoneCountries();
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [iso2, setIso2] = useState('');
+  const [number, setNumber] = useState('');
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (defaultCountry && !iso2) setIso2(defaultCountry);
+  }, [defaultCountry]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -93,6 +100,7 @@ function CreateWorkerForm({ onCreated }) {
     setSubmitting(true);
     try {
       // No pin field — the backend generates one and returns it once.
+      const phone = buildE164(countries, iso2, number);
       const result = await api.post('/api/owner/workers', { fullName, phone });
       onCreated(result);
     } catch (err) {
@@ -110,7 +118,7 @@ function CreateWorkerForm({ onCreated }) {
       </label>
       <label>
         Phone number
-        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+        <PhoneInput countries={countries} iso2={iso2} onIso2Change={setIso2} number={number} onNumberChange={setNumber} />
       </label>
       <p className="muted">A 6-digit login PIN will be generated automatically and shown once.</p>
       {error && <p className="error">{error}</p>}

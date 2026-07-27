@@ -3,6 +3,7 @@ package com.fieldservice.backend.config;
 import com.fieldservice.backend.entity.Profile;
 import com.fieldservice.backend.entity.Role;
 import com.fieldservice.backend.repository.ProfileRepository;
+import com.fieldservice.backend.service.PhoneNumberService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +26,7 @@ public class BootstrapOwnerRunner implements CommandLineRunner {
 
     private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PhoneNumberService phoneNumberService;
     private final String phone;
     private final String pin;
     private final String fullName;
@@ -32,11 +34,13 @@ public class BootstrapOwnerRunner implements CommandLineRunner {
     public BootstrapOwnerRunner(
             ProfileRepository profileRepository,
             PasswordEncoder passwordEncoder,
+            PhoneNumberService phoneNumberService,
             @Value("${app.bootstrap-owner.phone}") String phone,
             @Value("${app.bootstrap-owner.pin}") String pin,
             @Value("${app.bootstrap-owner.full-name}") String fullName) {
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
+        this.phoneNumberService = phoneNumberService;
         this.phone = phone;
         this.pin = pin;
         this.fullName = fullName;
@@ -47,17 +51,28 @@ public class BootstrapOwnerRunner implements CommandLineRunner {
         if (!StringUtils.hasText(phone) || !StringUtils.hasText(pin)) {
             return;
         }
-        if (profileRepository.existsByPhone(phone)) {
+
+        String normalizedPhone;
+        try {
+            normalizedPhone = phoneNumberService.normalize(phone);
+        } catch (IllegalArgumentException e) {
+            // A misconfigured optional bootstrap phone shouldn't take the whole app down —
+            // log it clearly and skip, same as the "not set at all" case above.
+            log.error("BOOTSTRAP_OWNER_PHONE is set but invalid ({}): {}", phone, e.getMessage());
+            return;
+        }
+
+        if (profileRepository.existsByPhone(normalizedPhone)) {
             return;
         }
 
         Profile owner = new Profile();
         owner.setRole(Role.OWNER);
         owner.setFullName(fullName);
-        owner.setPhone(phone);
+        owner.setPhone(normalizedPhone);
         owner.setPinHash(passwordEncoder.encode(pin));
         profileRepository.insert(owner);
 
-        log.info("Bootstrapped owner account for phone {}", phone);
+        log.info("Bootstrapped owner account for phone {}", normalizedPhone);
     }
 }

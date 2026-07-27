@@ -26,22 +26,26 @@ public class OwnerWorkerService {
     private final PasswordEncoder passwordEncoder;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final AssignmentService assignmentService;
+    private final PhoneNumberService phoneNumberService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public OwnerWorkerService(
             ProfileRepository profileRepository,
             PasswordEncoder passwordEncoder,
             AvailabilitySlotRepository availabilitySlotRepository,
-            AssignmentService assignmentService) {
+            AssignmentService assignmentService,
+            PhoneNumberService phoneNumberService) {
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.assignmentService = assignmentService;
+        this.phoneNumberService = phoneNumberService;
     }
 
     @Transactional
     public CreateWorkerResponse createWorker(CreateWorkerRequest request) {
-        if (profileRepository.existsByPhone(request.phone())) {
+        String phone = phoneNumberService.normalize(request.phone());
+        if (profileRepository.existsByPhone(phone)) {
             throw new IllegalArgumentException("A profile with that phone number already exists");
         }
         String pin = StringUtils.hasText(request.pin()) ? request.pin() : generatePin();
@@ -49,7 +53,7 @@ public class OwnerWorkerService {
         Profile worker = new Profile();
         worker.setRole(Role.WORKER);
         worker.setFullName(request.fullName());
-        worker.setPhone(request.phone());
+        worker.setPhone(phone);
         worker.setPinHash(passwordEncoder.encode(pin));
         Profile saved = profileRepository.insert(worker);
         return new CreateWorkerResponse(ProfileResponse.from(saved), pin);

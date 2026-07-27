@@ -15,7 +15,7 @@
 			"key": "owner_phone",
 			"value": "",
 			"type": "string",
-			"description": "Set to BOOTSTRAP_OWNER_PHONE from backend/.env"
+			"description": "Set to BOOTSTRAP_OWNER_PHONE from backend/.env (full E.164 format, e.g. +15550001111)"
 		},
 		{
 			"key": "owner_pin",
@@ -35,7 +35,7 @@
 		},
 		{
 			"key": "new_worker_phone",
-			"value": "5551234567",
+			"value": "+15551234567",
 			"type": "string"
 		},
 		{
@@ -96,6 +96,28 @@
 							"path": [
 								"api",
 								"ping"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Config",
+			"item": [
+				{
+					"name": "Get App Config",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"config"
 							]
 						}
 					}
