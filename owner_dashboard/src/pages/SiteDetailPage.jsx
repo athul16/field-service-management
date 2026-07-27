@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { StatusBadge } from '../components/StatusBadge';
 
 export function SiteDetailPage() {
   const { siteId } = useParams();
@@ -86,7 +87,9 @@ export function SiteDetailPage() {
                 </td>
                 <td>{project.startDate}</td>
                 <td>{project.endDate ?? '—'}</td>
-                <td>{project.status}</td>
+                <td>
+                  <StatusBadge status={project.status} />
+                </td>
               </tr>
             ))}
           </tbody>

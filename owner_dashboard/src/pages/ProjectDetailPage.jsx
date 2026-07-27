@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { StatusBadge } from '../components/StatusBadge';
 
 export function ProjectDetailPage() {
   const { projectId } = useParams();
@@ -55,7 +56,7 @@ export function ProjectDetailPage() {
             <Link to={`/sites/${project.siteId}`}>{project.siteName}</Link>
           </p>
           <p>
-            {project.startDate} &ndash; {project.endDate ?? 'ongoing'} &middot; {project.status}
+            {project.startDate} &ndash; {project.endDate ?? 'ongoing'} &middot; <StatusBadge status={project.status} />
           </p>
         </div>
       )}

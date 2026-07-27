@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AppLayout } from './layout/AppLayout';
+import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -17,7 +18,7 @@ function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route path="/" element={<Navigate to="/sites" replace />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/sites" element={<SitesPage />} />
           <Route path="/sites/:siteId" element={<SiteDetailPage />} />
           <Route path="/projects" element={<ProjectsPage />} />

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { StatusBadge } from '../components/StatusBadge';
 
 export function ProjectsPage() {
   const [projects, setProjects] = useState([]);
@@ -58,7 +59,9 @@ export function ProjectsPage() {
                 </td>
                 <td>{project.startDate}</td>
                 <td>{project.endDate ?? '—'}</td>
-                <td>{project.status}</td>
+                <td>
+                  <StatusBadge status={project.status} />
+                </td>
               </tr>
             ))}
           </tbody>

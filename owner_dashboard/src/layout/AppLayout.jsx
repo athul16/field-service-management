@@ -1,5 +1,14 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { HomeIcon, ProjectIcon, ReportIcon, SiteIcon, WorkerIcon } from '../components/Icons';
+
+const TABS = [
+  { to: '/', label: 'Home', Icon: HomeIcon, end: true },
+  { to: '/sites', label: 'Sites', Icon: SiteIcon },
+  { to: '/projects', label: 'Projects', Icon: ProjectIcon },
+  { to: '/workers', label: 'Workers', Icon: WorkerIcon },
+  { to: '/reports', label: 'Reports', Icon: ReportIcon },
+];
 
 export function AppLayout() {
   const { profile, logout } = useAuth();
@@ -12,34 +21,31 @@ export function AppLayout() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <h2 className="sidebar-title">Field Service</h2>
-        <nav>
-          <NavLink to="/sites" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            Sites
-          </NavLink>
-          <NavLink to="/projects" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            Projects
-          </NavLink>
-          <NavLink to="/workers" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            Workers
-          </NavLink>
-          <NavLink to="/reports" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            Reports
-          </NavLink>
+      <header className="topbar">
+        <div className="topbar-row">
+          <div className="brand">
+            <span className="brand-mark">FS</span>
+            <span className="brand-name">Field Service</span>
+          </div>
+          <div className="topbar-user">
+            <span className="user-name">{profile?.fullName}</span>
+            <button className="btn btn-secondary" onClick={handleLogout}>
+              Log out
+            </button>
+          </div>
+        </div>
+        <nav className="tabbar">
+          {TABS.map(({ to, label, Icon, end }) => (
+            <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'tab tab-active' : 'tab')}>
+              <Icon width={20} height={20} />
+              <span>{label}</span>
+            </NavLink>
+          ))}
         </nav>
-      </aside>
-      <div className="main-column">
-        <header className="topbar">
-          <span>{profile?.fullName}</span>
-          <button className="btn btn-secondary" onClick={handleLogout}>
-            Log out
-          </button>
-        </header>
-        <main className="content">
-          <Outlet />
-        </main>
-      </div>
+      </header>
+      <main className="content">
+        <Outlet />
+      </main>
     </div>
   );
 }
