@@ -326,6 +326,25 @@ select:focus {
   color: var(--muted);
 }
 
+/* Shift photo + confirmation */
+.shift-photo-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+
+.confirmed-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--green);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
 /* Table */
 .table {
   width: 100%;

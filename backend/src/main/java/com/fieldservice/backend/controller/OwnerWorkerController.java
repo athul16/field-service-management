@@ -45,6 +45,11 @@ public class OwnerWorkerController {
         return ownerWorkerService.listWorkers();
     }
 
+    @GetMapping("/{id}")
+    public ProfileResponse getWorker(@PathVariable UUID id) {
+        return ownerWorkerService.getWorker(id);
+    }
+
     @GetMapping("/{id}/availability")
     public List<AvailabilitySlotResponse> getAvailability(@PathVariable UUID id) {
         return ownerWorkerService.getAvailability(id);

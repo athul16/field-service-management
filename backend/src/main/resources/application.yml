@@ -8,11 +8,21 @@ spring:
     password: ${DB_PASSWORD}
     hikari:
       # The Supabase pooler this connects through caps session-mode clients
-      # at 10 total for the whole project — keep this small so local dev
-      # runs (plus the odd psql/pg_dump check) don't exhaust it by
-      # themselves. Revisit before any multi-instance deployment.
-      maximum-pool-size: 3
-      minimum-idle: 1
+      # at 10 total for the whole project — keep this well under that so
+      # local dev runs (plus the odd psql/pg_dump check) don't exhaust it
+      # by themselves. Revisit before any multi-instance deployment.
+      #
+      # Sized to 5, not the original 3: this pooler is in a different AWS
+      # region than wherever the backend runs, so establishing a *new*
+      # physical connection costs a real, measured ~300-600ms round trip
+      # before a query even starts (confirmed via a raw TCP connect timing
+      # test, not guessed). minimum-idle == maximum-pool-size keeps every
+      # connection warm at all times, so a page that fires several
+      # concurrent requests (Worker Detail fires 5) doesn't have some of
+      # them queue for a connection *or* pay that cold-connection tax on
+      # top of the already-unavoidable per-query network latency.
+      maximum-pool-size: 5
+      minimum-idle: 5
   flyway:
     baseline-on-migrate: true
     baseline-version: "0"

@@ -70,6 +70,12 @@ public class OwnerWorkerService {
                 .toList();
     }
 
+    public ProfileResponse getWorker(UUID workerId) {
+        return profileRepository.findById(workerId)
+                .map(ProfileResponse::from)
+                .orElseThrow(() -> new NotFoundException("No worker found with that id"));
+    }
+
     /** Owner-facing view of a specific worker's availability — deliberately not routed through
      *  AvailabilityService, which is conventionally scoped to the authenticated worker only. */
     public List<AvailabilitySlotResponse> getAvailability(UUID workerId) {

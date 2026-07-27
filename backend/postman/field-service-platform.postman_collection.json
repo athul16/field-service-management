@@ -348,6 +348,30 @@
 					}
 				},
 				{
+					"name": "Get Worker",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{owner_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/owner/workers/{{worker_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"owner",
+								"workers",
+								"{{worker_id}}"
+							]
+						}
+					}
+				},
+				{
 					"name": "Get Worker Availability",
 					"request": {
 						"method": "GET",
@@ -795,6 +819,31 @@
 									"key": "to",
 									"value": "2026-12-31T23:59:59Z"
 								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Confirm Shift",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{owner_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/owner/shifts/{{shift_id}}/confirm",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"owner",
+								"shifts",
+								"{{shift_id}}",
+								"confirm"
 							]
 						}
 					}

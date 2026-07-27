@@ -74,4 +74,4 @@ export const api = {
   },
 };
 
-export { ApiError };
+export { ApiError, BASE_URL };

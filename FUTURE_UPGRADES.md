@@ -11,10 +11,7 @@ Each item below was verified against the actual code (not guessed) as of the Sit
 
 **Use case**: an owner assigns Maria to a new HVAC job Monday morning. Today she only finds out if she happens to open the app. This is usually the single most-requested feature for any scheduling tool.
 
-### 2. Clock-out photo review in the dashboard
-The mobile app already captures a photo on every clock-out and the backend stores/serves it (`Shift.clockOutPhotoUrl`, `ShiftResponse`), but **`owner_dashboard` never renders or links to it anywhere** — confirmed zero references to `clockOutPhotoUrl`/"photo" in `owner_dashboard/src/`.
-
-**Use case**: an owner wants to spot-check that a plumber actually fixed the leak before marking the job billable to the end customer. The photo is captured today and then effectively invisible.
+~~### 2. Clock-out photo review in the dashboard~~ — **shipped.** `WorkerDetailPage`'s "Completed tasks" table now shows a clickable photo thumbnail per shift, plus a Confirm action (`shifts.confirmed_at`/`confirmed_by`, `PATCH /api/owner/shifts/{id}/confirm`) so an owner can review and sign off on completed work. See `agents.md`'s Status section for the detail.
 
 ### 3. Edit/delete for Sites, Projects, Workers
 Confirmed via the controllers: `OwnerSiteController` and `OwnerWorkerController` only have `POST`/`GET`; `OwnerProjectController` adds one `PATCH` (status only). No `PUT`/`DELETE` exists anywhere for these three resources.
@@ -59,6 +56,11 @@ Every list page (Sites, Projects, Workers, Assignments) loads everything unfilte
 
 ### 12. Automated tests + CI
 Already flagged in `agents.md`'s Known gaps. Worth repeating here since it's the thing that makes building any of the above safer.
+
+### 13. Move the database closer to where it's actually used
+Confirmed via direct measurement: every DB-touching API call pays a ~300-600ms+ network round-trip tax just from the physical distance between wherever this backend runs and the Supabase pooler's region (`ap-south-1`/Mumbai), on top of whatever the query itself costs. The connection-pool sizing fix (see `agents.md`'s Environment notes) removes the *queuing* penalty on pages with several concurrent requests, but it can't remove this base distance tax — no code change can.
+
+**Use case**: once this is used somewhere other than this dev machine (a real deployment, or just a developer/office in a different region), every dashboard page load and every mobile clock-in/out pays this same tax. Fixing it for real means hosting the Postgres database in a region close to wherever the backend/users actually are — a hosting decision, not a code change, and worth deciding deliberately rather than discovering by accident when it starts feeling slow again.
 
 ---
 

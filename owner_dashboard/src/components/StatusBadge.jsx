@@ -1,3 +1,3 @@
-export function StatusBadge({ status }) {
-  return <span className={`badge badge-${status}`}>{status}</span>;
+export function StatusBadge({ status, label }) {
+  return <span className={`badge badge-${status}`}>{label ?? status}</span>;
 }

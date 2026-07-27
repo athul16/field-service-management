@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api } from '../api/client';
+import { api, BASE_URL } from '../api/client';
+import { CheckCircleIcon } from '../components/Icons';
 import { PinRevealModal } from '../components/PinRevealModal';
+import { StatusBadge } from '../components/StatusBadge';
 
 export function WorkerDetailPage() {
   const { workerId } = useParams();
@@ -18,8 +20,8 @@ export function WorkerDetailPage() {
   // the others from rendering.
   useEffect(() => {
     api
-      .get('/api/owner/workers')
-      .then((workers) => setWorker(workers.find((w) => w.id === workerId) ?? null))
+      .get(`/api/owner/workers/${workerId}`)
+      .then(setWorker)
       .catch((err) => setError(err.message));
   }, [workerId]);
 
@@ -57,6 +59,15 @@ export function WorkerDetailPage() {
     try {
       const result = await api.post(`/api/owner/workers/${workerId}/pin`, {});
       setPinReveal({ workerName: worker?.fullName ?? 'this worker', pin: result.pin });
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleConfirmShift(shiftId) {
+    try {
+      const updated = await api.patch(`/api/owner/shifts/${shiftId}/confirm`, {});
+      setShifts((prev) => prev.map((s) => (s.id === shiftId ? updated : s)));
     } catch (err) {
       setError(err.message);
     }
@@ -122,7 +133,8 @@ export function WorkerDetailPage() {
         </ul>
       )}
 
-      <h2>Recent shifts</h2>
+      <h2>Completed tasks</h2>
+      <p className="muted">Every shift this worker has recorded — review the clock-out photo and confirm completed work.</p>
       {shifts.length === 0 ? (
         <p className="muted">No shifts recorded yet.</p>
       ) : (
@@ -133,6 +145,8 @@ export function WorkerDetailPage() {
               <th>Clock in</th>
               <th>Clock out</th>
               <th>Status</th>
+              <th>Photo</th>
+              <th>Confirmation</th>
             </tr>
           </thead>
           <tbody>
@@ -141,7 +155,32 @@ export function WorkerDetailPage() {
                 <td>{shift.siteName}</td>
                 <td>{new Date(shift.clockInAt).toLocaleString()}</td>
                 <td>{shift.clockOutAt ? new Date(shift.clockOutAt).toLocaleString() : '—'}</td>
-                <td>{shift.status}</td>
+                <td>
+                  <StatusBadge status={shift.status === 'COMPLETED' ? 'active' : 'closed'} label={shift.status} />
+                </td>
+                <td>
+                  {shift.clockOutPhotoUrl ? (
+                    <a href={`${BASE_URL}${shift.clockOutPhotoUrl}`} target="_blank" rel="noreferrer">
+                      <img className="shift-photo-thumb" src={`${BASE_URL}${shift.clockOutPhotoUrl}`} alt="Clock-out proof" />
+                    </a>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td>
+                  {shift.status !== 'COMPLETED' ? (
+                    '—'
+                  ) : shift.confirmedAt ? (
+                    <span className="confirmed-tag">
+                      <CheckCircleIcon width={16} height={16} />
+                      Confirmed
+                    </span>
+                  ) : (
+                    <button className="btn btn-secondary" onClick={() => handleConfirmShift(shift.id)}>
+                      Confirm
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

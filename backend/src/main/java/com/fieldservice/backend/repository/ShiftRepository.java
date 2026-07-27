@@ -27,6 +27,9 @@ public class ShiftRepository {
         shift.setClockOutPhotoUrl(rs.getString("clock_out_photo_url"));
         shift.setStatus(ShiftStatus.fromDbValue(rs.getString("status")));
         shift.setCreatedAt(rs.getTimestamp("created_at").toInstant());
+        Timestamp confirmedAt = rs.getTimestamp("confirmed_at");
+        shift.setConfirmedAt(confirmedAt == null ? null : confirmedAt.toInstant());
+        shift.setConfirmedBy(rs.getObject("confirmed_by", UUID.class));
         return shift;
     };
 
@@ -37,6 +40,7 @@ public class ShiftRepository {
      */
     private static final RowMapper<ShiftResponse> RESPONSE_ROW_MAPPER = (rs, rowNum) -> {
         Timestamp clockOutAt = rs.getTimestamp("clock_out_at");
+        Timestamp confirmedAt = rs.getTimestamp("confirmed_at");
         return new ShiftResponse(
                 rs.getObject("id", UUID.class),
                 rs.getObject("worker_id", UUID.class),
@@ -46,13 +50,14 @@ public class ShiftRepository {
                 rs.getTimestamp("clock_in_at").toInstant(),
                 clockOutAt == null ? null : clockOutAt.toInstant(),
                 rs.getString("clock_out_photo_url"),
-                ShiftStatus.fromDbValue(rs.getString("status")).name());
+                ShiftStatus.fromDbValue(rs.getString("status")).name(),
+                confirmedAt == null ? null : confirmedAt.toInstant());
     };
 
     private static final String RESPONSE_BASE_QUERY =
             """
             select sh.id, sh.worker_id, w.full_name as worker_name, sh.site_id, s.name as site_name,
-                   sh.clock_in_at, sh.clock_out_at, sh.clock_out_photo_url, sh.status
+                   sh.clock_in_at, sh.clock_out_at, sh.clock_out_photo_url, sh.status, sh.confirmed_at
             from shifts sh
             join profiles w on w.id = sh.worker_id
             join sites s on s.id = sh.site_id
@@ -110,6 +115,12 @@ public class ShiftRepository {
                         .addValue("clockOutAt", Timestamp.from(clockOutAt))
                         .addValue("photoUrl", photoUrl)
                         .addValue("status", ShiftStatus.COMPLETED.toDbValue()));
+    }
+
+    public void confirmShift(UUID shiftId, UUID confirmedByOwnerId) {
+        jdbc.update(
+                "update shifts set confirmed_at = now(), confirmed_by = :ownerId where id = :id",
+                new MapSqlParameterSource().addValue("id", shiftId).addValue("ownerId", confirmedByOwnerId));
     }
 
     public ShiftResponse findResponseById(UUID id) {

@@ -19,5 +19,6 @@ public record ShiftResponse(
         Instant clockInAt,
         Instant clockOutAt,
         String clockOutPhotoUrl,
-        String status) {
+        String status,
+        Instant confirmedAt) {
 }

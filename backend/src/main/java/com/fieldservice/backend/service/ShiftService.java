@@ -76,7 +76,8 @@ public class ShiftService {
                 saved.getClockInAt(),
                 saved.getClockOutAt(),
                 saved.getClockOutPhotoUrl(),
-                saved.getStatus().name());
+                saved.getStatus().name(),
+                saved.getConfirmedAt());
     }
 
     /** One atomic request: upload the photo, then mark the shift completed — no orphaned photo if either step fails on its own. */
@@ -94,6 +95,18 @@ public class ShiftService {
         String photoUrl = photoStorageService.store(worker.getId(), shiftId, photo);
 
         shiftRepository.updateClockOut(shiftId, Instant.now(), photoUrl);
+        return shiftRepository.findResponseById(shiftId);
+    }
+
+    /** Only a completed shift (clocked out, photo attached) can be confirmed — idempotent if called again. */
+    @Transactional
+    public ShiftResponse confirmShift(UUID shiftId, Profile owner) {
+        Shift shift = shiftRepository.findById(shiftId)
+                .orElseThrow(() -> new NotFoundException("No shift found with that id"));
+        if (shift.getStatus() != ShiftStatus.COMPLETED) {
+            throw new IllegalArgumentException("Only a completed shift can be confirmed");
+        }
+        shiftRepository.confirmShift(shiftId, owner.getId());
         return shiftRepository.findResponseById(shiftId);
     }
 }

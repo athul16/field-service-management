@@ -21,6 +21,8 @@ public class Shift {
     private ShiftStatus status = ShiftStatus.IN_PROGRESS;
 
     private Instant createdAt;
+    private Instant confirmedAt;
+    private UUID confirmedBy;
 
     public UUID getId() {
         return id;
@@ -84,5 +86,21 @@ public class Shift {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Instant getConfirmedAt() {
+        return confirmedAt;
+    }
+
+    public void setConfirmedAt(Instant confirmedAt) {
+        this.confirmedAt = confirmedAt;
+    }
+
+    public UUID getConfirmedBy() {
+        return confirmedBy;
+    }
+
+    public void setConfirmedBy(UUID confirmedBy) {
+        this.confirmedBy = confirmedBy;
     }
 }
