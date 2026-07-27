@@ -16,10 +16,10 @@ class Site {
   factory Site.fromMap(Map<String, dynamic> map) {
     return Site(
       id: map['id'] as String,
-      projectId: map['project_id'] as String,
+      projectId: map['projectId'] as String,
       name: map['name'] as String,
       address: map['address'] as String,
-      projectName: (map['projects'] as Map<String, dynamic>?)?['name'] as String?,
+      projectName: map['projectName'] as String?,
     );
   }
 }

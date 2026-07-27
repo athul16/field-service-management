@@ -1,65 +1,16 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/api_client.dart';
 
-import '../core/supabase_config.dart';
-
-/// Handles worker registration and login using phone-based OTP.
-///
-/// Flow:
-/// 1. Worker enters name, phone (required), email (optional) -> [sendOtp]
-/// 2. Worker enters the code they received by SMS -> [verifyOtpAndCreateProfile]
-///    or [verifyOtpForLogin] for returning workers.
-///
-/// NOTE: Phone OTP delivery requires an SMS provider (e.g. Twilio) to be
-/// configured in the Supabase dashboard under Authentication > Providers > Phone.
+/// Worker login: phone + PIN against the backend's own credential store
+/// (see backend's AuthService/JwtService) — no Supabase involved at all.
+/// The backend infers "who is making this request" from the JWT on every
+/// other call, so nothing here needs to track or pass a worker id around.
 class AuthService {
-  final SupabaseClient _client = SupabaseConfig.client;
+  final _client = ApiClient.instance;
 
-  Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
-
-  User? get currentUser => _client.auth.currentUser;
-
-  Future<void> sendOtp(String phone) async {
-    await _client.auth.signInWithOtp(phone: phone);
+  Future<void> signInWithPin({required String phone, required String pin}) async {
+    final response = await _client.post('/api/auth/login', body: {'phone': phone, 'pin': pin});
+    await _client.setToken(response['token'] as String);
   }
 
-  /// Verifies the OTP for a brand-new worker and creates their profile row.
-  Future<void> verifyOtpAndCreateProfile({
-    required String phone,
-    required String otpCode,
-    required String fullName,
-    String? email,
-  }) async {
-    final response = await _client.auth.verifyOTP(
-      type: OtpType.sms,
-      phone: phone,
-      token: otpCode,
-    );
-
-    final user = response.user;
-    if (user == null) {
-      throw StateError('OTP verification did not return a user.');
-    }
-
-    await _client.from('profiles').upsert({
-      'id': user.id,
-      'role': 'worker',
-      'full_name': fullName,
-      'phone': phone,
-      if (email != null && email.isNotEmpty) 'email': email,
-    });
-  }
-
-  /// Verifies the OTP for a returning worker (profile already exists).
-  Future<void> verifyOtpForLogin({
-    required String phone,
-    required String otpCode,
-  }) async {
-    await _client.auth.verifyOTP(
-      type: OtpType.sms,
-      phone: phone,
-      token: otpCode,
-    );
-  }
-
-  Future<void> signOut() => _client.auth.signOut();
+  Future<void> signOut() => _client.clearToken();
 }

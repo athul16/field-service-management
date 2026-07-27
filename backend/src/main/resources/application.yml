@@ -1,0 +1,33 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      # The Supabase pooler this connects through caps session-mode clients
+      # at 10 total for the whole project — keep this small so local dev
+      # runs (plus the odd psql/pg_dump check) don't exhaust it by
+      # themselves. Revisit before any multi-instance deployment.
+      maximum-pool-size: 3
+      minimum-idle: 1
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: "0"
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-days: ${JWT_EXPIRATION_DAYS:30}
+  bootstrap-owner:
+    phone: ${BOOTSTRAP_OWNER_PHONE:}
+    pin: ${BOOTSTRAP_OWNER_PIN:}
+    full-name: ${BOOTSTRAP_OWNER_NAME:Owner}
+  photo-storage:
+    base-dir: ${PHOTO_STORAGE_DIR:./data/photos}

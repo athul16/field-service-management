@@ -1,28 +1,13 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../core/supabase_config.dart';
+import '../core/api_client.dart';
 import '../models/availability_slot.dart';
 
 /// Handles the worker's declared availability windows.
 class AvailabilityService {
-  final SupabaseClient _client = SupabaseConfig.client;
-
-  String get _workerId {
-    final id = _client.auth.currentUser?.id;
-    if (id == null) throw StateError('No signed-in worker.');
-    return id;
-  }
+  final _client = ApiClient.instance;
 
   Future<List<AvailabilitySlot>> fetchMySlots() async {
-    final rows = await _client
-        .from('availability_slots')
-        .select()
-        .eq('worker_id', _workerId)
-        .order('start_at');
-
-    return (rows as List)
-        .map((row) => AvailabilitySlot.fromMap(row))
-        .toList();
+    final rows = await _client.get('/api/availability') as List;
+    return rows.map((row) => AvailabilitySlot.fromMap(row as Map<String, dynamic>)).toList();
   }
 
   /// Adds one slot per day in [dates], each spanning [startTime]-[endTime].
@@ -32,34 +17,34 @@ class AvailabilityService {
     required List<DateTime> dates,
     required TimeOfDayRange timeRange,
   }) async {
-    final inserts = dates.map((date) {
+    if (dates.isEmpty) return;
+
+    final slots = dates.map((date) {
       final start = DateTime(
         date.year,
         date.month,
         date.day,
         timeRange.startHour,
         timeRange.startMinute,
-      );
+      ).toUtc();
       final end = DateTime(
         date.year,
         date.month,
         date.day,
         timeRange.endHour,
         timeRange.endMinute,
-      );
+      ).toUtc();
       return {
-        'worker_id': _workerId,
-        'start_at': start.toIso8601String(),
-        'end_at': end.toIso8601String(),
+        'startAt': start.toIso8601String(),
+        'endAt': end.toIso8601String(),
       };
     }).toList();
 
-    if (inserts.isEmpty) return;
-    await _client.from('availability_slots').insert(inserts);
+    await _client.post('/api/availability', body: {'slots': slots});
   }
 
   Future<void> deleteSlot(String id) async {
-    await _client.from('availability_slots').delete().eq('id', id);
+    await _client.delete('/api/availability/$id');
   }
 }
 

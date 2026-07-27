@@ -1,0 +1,514 @@
+{
+  "info": {
+    "_postman_id": "b7f2b5b0-6b6b-4f5a-9a7a-3f5a2f0e9d11",
+    "name": "Field Service Platform - Backend API",
+    "description": "Data-seeding and manual-testing collection for the Spring Boot backend.\n\nTypical flow:\n1. Set `owner_phone` / `owner_pin` (collection variables) to your bootstrap owner credentials from `backend/.env`, then run **Auth > Login - Owner**. This saves the JWT into `owner_token` automatically.\n2. Run **Owner - Workers > Create Worker** to add a worker (saves the new id into `worker_id`).\n3. Run **Owner - Projects > Create Project** (saves `project_id`), then **Owner - Sites > Create Site** (saves `site_id`).\n4. Run **Owner - Assignments > Create Assignment** to link the worker to that site.\n5. Run **Auth > Login - Worker** using the phone/pin you gave the worker in step 2 (edit `new_worker_phone`/`new_worker_pin` request body first if you changed them) — saves `worker_token`.\n6. Use the **Worker - ...** folders to clock in/out, manage availability, and view timesheets as that worker.\n\nAll IDs and tokens are stored as collection variables and chained automatically by each request's test script — you normally don't need to copy/paste anything by hand.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080", "type": "string" },
+    { "key": "owner_phone", "value": "", "type": "string", "description": "Set to BOOTSTRAP_OWNER_PHONE from backend/.env" },
+    { "key": "owner_pin", "value": "", "type": "string", "description": "Set to BOOTSTRAP_OWNER_PIN from backend/.env" },
+    { "key": "owner_token", "value": "", "type": "string" },
+    { "key": "new_worker_name", "value": "New Worker", "type": "string" },
+    { "key": "new_worker_phone", "value": "5551234567", "type": "string" },
+    { "key": "new_worker_pin", "value": "1234", "type": "string" },
+    { "key": "worker_token", "value": "", "type": "string" },
+    { "key": "worker_id", "value": "", "type": "string" },
+    { "key": "project_id", "value": "", "type": "string" },
+    { "key": "site_id", "value": "", "type": "string" },
+    { "key": "assignment_id", "value": "", "type": "string" },
+    { "key": "shift_id", "value": "", "type": "string" },
+    { "key": "availability_slot_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Misc",
+      "item": [
+        {
+          "name": "Ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/ping", "host": ["{{base_url}}"], "path": ["api", "ping"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login - Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('owner_token', json.token);",
+                  "    console.log('owner_token saved');",
+                  "} else {",
+                  "    console.log('Login failed', pm.response.text());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{owner_phone}}\",\n  \"pin\": \"{{owner_pin}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Login - Worker",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('worker_token', json.token);",
+                  "    pm.collectionVariables.set('worker_id', json.profile.id);",
+                  "    console.log('worker_token / worker_id saved');",
+                  "} else {",
+                  "    console.log('Login failed', pm.response.text());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{new_worker_phone}}\",\n  \"pin\": \"{{new_worker_pin}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Get My Profile (/api/me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{worker_token}}" }],
+            "url": { "raw": "{{base_url}}/api/me", "host": ["{{base_url}}"], "path": ["api", "me"] },
+            "description": "Swap the Authorization header to {{owner_token}} to check the owner's profile instead."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Owner - Workers",
+      "item": [
+        {
+          "name": "Create Worker",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('worker_id', json.id);",
+                  "    console.log('worker_id saved:', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"{{new_worker_name}}\",\n  \"phone\": \"{{new_worker_phone}}\",\n  \"pin\": \"{{new_worker_pin}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/owner/workers", "host": ["{{base_url}}"], "path": ["api", "owner", "workers"] }
+          }
+        },
+        {
+          "name": "Set Worker PIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pin\": \"{{new_worker_pin}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/owner/workers/{{worker_id}}/pin",
+              "host": ["{{base_url}}"],
+              "path": ["api", "owner", "workers", "{{worker_id}}", "pin"]
+            }
+          }
+        },
+        {
+          "name": "List Workers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": { "raw": "{{base_url}}/api/owner/workers", "host": ["{{base_url}}"], "path": ["api", "owner", "workers"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Owner - Projects",
+      "item": [
+        {
+          "name": "Create Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('project_id', json.id);",
+                  "    console.log('project_id saved:', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Downtown Renovation\",\n  \"location\": \"Main Street\",\n  \"startDate\": \"2026-08-01\",\n  \"endDate\": \"2026-12-31\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/owner/projects", "host": ["{{base_url}}"], "path": ["api", "owner", "projects"] }
+          }
+        },
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": { "raw": "{{base_url}}/api/owner/projects", "host": ["{{base_url}}"], "path": ["api", "owner", "projects"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Owner - Sites",
+      "item": [
+        {
+          "name": "Create Site (under project_id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('site_id', json.id);",
+                  "    console.log('site_id saved:', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Block A\",\n  \"address\": \"123 Main Street\",\n  \"latitude\": 12.9716,\n  \"longitude\": 77.5946\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/owner/projects/{{project_id}}/sites",
+              "host": ["{{base_url}}"],
+              "path": ["api", "owner", "projects", "{{project_id}}", "sites"]
+            }
+          }
+        },
+        {
+          "name": "List Sites for Project",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/owner/sites?projectId={{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "owner", "sites"],
+              "query": [{ "key": "projectId", "value": "{{project_id}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Owner - Assignments",
+      "item": [
+        {
+          "name": "Create Assignment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('assignment_id', json.id);",
+                  "    console.log('assignment_id saved:', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": \"{{project_id}}\",\n  \"siteId\": \"{{site_id}}\",\n  \"workerId\": \"{{worker_id}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/owner/assignments", "host": ["{{base_url}}"], "path": ["api", "owner", "assignments"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Owner - Shifts",
+      "item": [
+        {
+          "name": "Search Shifts - No Filters",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": { "raw": "{{base_url}}/api/owner/shifts", "host": ["{{base_url}}"], "path": ["api", "owner", "shifts"] }
+          }
+        },
+        {
+          "name": "Search Shifts - By Worker",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/owner/shifts?workerId={{worker_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "owner", "shifts"],
+              "query": [{ "key": "workerId", "value": "{{worker_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Search Shifts - By Site",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/owner/shifts?siteId={{site_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "owner", "shifts"],
+              "query": [{ "key": "siteId", "value": "{{site_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Search Shifts - By Date Range",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/owner/shifts?from=2026-07-01T00:00:00Z&to=2026-12-31T23:59:59Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "owner", "shifts"],
+              "query": [
+                { "key": "from", "value": "2026-07-01T00:00:00Z" },
+                { "key": "to", "value": "2026-12-31T23:59:59Z" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Worker - Sites & Shifts",
+      "item": [
+        {
+          "name": "List Assigned Sites",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{worker_token}}" }],
+            "url": { "raw": "{{base_url}}/api/sites/assigned", "host": ["{{base_url}}"], "path": ["api", "sites", "assigned"] }
+          }
+        },
+        {
+          "name": "Get Active Shift",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{worker_token}}" }],
+            "url": { "raw": "{{base_url}}/api/shifts/active", "host": ["{{base_url}}"], "path": ["api", "shifts", "active"] }
+          }
+        },
+        {
+          "name": "Clock In",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('shift_id', json.id);",
+                  "    console.log('shift_id saved:', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{worker_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"siteId\": \"{{site_id}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/shifts/clock-in", "host": ["{{base_url}}"], "path": ["api", "shifts", "clock-in"] }
+          }
+        },
+        {
+          "name": "Clock Out",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{worker_token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "photo", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/shifts/{{shift_id}}/clock-out",
+              "host": ["{{base_url}}"],
+              "path": ["api", "shifts", "{{shift_id}}", "clock-out"]
+            },
+            "description": "In Postman's Body tab, click the 'photo' field's file picker and choose any image file from your machine before sending."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Worker - Availability",
+      "item": [
+        {
+          "name": "List Availability",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{worker_token}}" }],
+            "url": { "raw": "{{base_url}}/api/availability", "host": ["{{base_url}}"], "path": ["api", "availability"] }
+          }
+        },
+        {
+          "name": "Add Availability Slots",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (Array.isArray(json) && json.length > 0) {",
+                  "        pm.collectionVariables.set('availability_slot_id', json[0].id);",
+                  "        console.log('availability_slot_id saved:', json[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{worker_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slots\": [\n    {\n      \"startAt\": \"2026-08-01T09:00:00Z\",\n      \"endAt\": \"2026-08-01T17:00:00Z\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/availability", "host": ["{{base_url}}"], "path": ["api", "availability"] }
+          }
+        },
+        {
+          "name": "Delete Availability Slot",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{worker_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/availability/{{availability_slot_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "availability", "{{availability_slot_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Worker - Timesheet",
+      "item": [
+        {
+          "name": "Get Week Timesheet",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{worker_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/timesheet/week?weekStart=2026-07-20T00:00:00Z&weekEnd=2026-07-27T23:59:59Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "timesheet", "week"],
+              "query": [
+                { "key": "weekStart", "value": "2026-07-20T00:00:00Z" },
+                { "key": "weekEnd", "value": "2026-07-27T23:59:59Z" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

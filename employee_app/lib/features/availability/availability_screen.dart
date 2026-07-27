@@ -180,9 +180,11 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   }
 
   String _formatSlot(AvailabilitySlot slot) {
-    final date = '${slot.startAt.month}/${slot.startAt.day}';
-    final start = TimeOfDay.fromDateTime(slot.startAt).format(context);
-    final end = TimeOfDay.fromDateTime(slot.endAt).format(context);
+    final localStart = slot.startAt.toLocal();
+    final localEnd = slot.endAt.toLocal();
+    final date = '${localStart.month}/${localStart.day}';
+    final start = TimeOfDay.fromDateTime(localStart).format(context);
+    final end = TimeOfDay.fromDateTime(localEnd).format(context);
     return '$date · $start – $end';
   }
 }

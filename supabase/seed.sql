@@ -3,42 +3,53 @@
 -- dashboard exists. This is NOT a schema migration — do not number it or
 -- put it in migrations/. Run manually in the Supabase SQL editor.
 --
--- Prerequisites (do these first, through the running app):
---   1. Using Supabase's "Test Phone Numbers and OTPs" (Authentication ->
---      Providers -> Phone), register at least two test workers through the
---      employee_app "Create an account" flow. Registration always creates
---      a profile with role = 'worker' (see AuthService.verifyOtpAndCreateProfile),
---      so every account starts as a worker regardless of who it's for.
---   2. Note the phone numbers you used for each test account below.
+-- Prerequisites (do these first, in the Supabase Dashboard):
+--   1. employee_app has no self-registration (see 0004_employee_pin_login.sql
+--      — login is phone + PIN, provisioned by the owner). So the only way to
+--      create a test account right now is: Authentication -> Users -> Add
+--      user. For each of the two test accounts below, set the phone number
+--      and a password (the password IS the PIN), and check "Auto Confirm
+--      User" so the phone counts as verified.
+--   2. Note the phone number + PIN you used for each account below — the
+--      dashboard creates the auth.users row, but not a profiles row; this
+--      script creates profiles (and mirrors the PIN into pin_hash) for both.
 --
 -- This script then:
---   - promotes one of those profiles to role = 'owner'
+--   - creates a profiles row for each (one 'owner', one 'worker')
 --   - creates one project + one site under that owner
---   - assigns the other test worker to that site
+--   - assigns the worker to that site
 --
--- Edit the two phone numbers below to match the test accounts you created,
+-- Edit the phone numbers/PINs below to match the test accounts you created,
 -- then run the whole script.
 
 do $$
 declare
-  v_owner_phone text := '+15005550001';   -- << replace with your test owner's phone
-  v_worker_phone text := '+15005550002';  -- << replace with your test worker's phone
+  v_owner_phone text := '9000000001';   -- << replace with your test owner's phone (local format, no country code)
+  v_owner_pin text := '123456';         -- << must match the password you set for them
+  v_worker_phone text := '9000000002';  -- << replace with your test worker's phone (local format, no country code)
+  v_worker_pin text := '654321';        -- << must match the password you set for them
   v_owner_id uuid;
   v_worker_id uuid;
   v_project_id uuid;
   v_site_id uuid;
 begin
-  select id into v_owner_id from profiles where phone = v_owner_phone;
-  select id into v_worker_id from profiles where phone = v_worker_phone;
+  select id into v_owner_id from auth.users where phone = v_owner_phone;
+  select id into v_worker_id from auth.users where phone = v_worker_phone;
 
   if v_owner_id is null then
-    raise exception 'No profile found with phone %. Register this test account through the app first.', v_owner_phone;
+    raise exception 'No auth user with phone %. Create it first via Dashboard > Authentication > Users > Add user.', v_owner_phone;
   end if;
   if v_worker_id is null then
-    raise exception 'No profile found with phone %. Register this test account through the app first.', v_worker_phone;
+    raise exception 'No auth user with phone %. Create it first via Dashboard > Authentication > Users > Add user.', v_worker_phone;
   end if;
 
-  update profiles set role = 'owner' where id = v_owner_id;
+  insert into profiles (id, role, full_name, phone, pin_hash)
+  values (v_owner_id, 'owner', 'Test Owner', v_owner_phone, crypt(v_owner_pin, gen_salt('bf')))
+  on conflict (id) do update set role = 'owner', pin_hash = excluded.pin_hash;
+
+  insert into profiles (id, role, full_name, phone, pin_hash)
+  values (v_worker_id, 'worker', 'Test Worker', v_worker_phone, crypt(v_worker_pin, gen_salt('bf')))
+  on conflict (id) do update set pin_hash = excluded.pin_hash;
 
   insert into projects (owner_id, name, location, start_date, status)
   values (v_owner_id, 'Riverside Apartments Refit', 'Pune, MH', current_date, 'active')
@@ -51,5 +62,5 @@ begin
   insert into assignments (project_id, site_id, worker_id, assigned_by)
   values (v_project_id, v_site_id, v_worker_id, v_owner_id);
 
-  raise notice 'Seed complete: project %, site %, worker % assigned.', v_project_id, v_site_id, v_worker_id;
+  raise notice 'Seed complete: owner %, worker %, project %, site %.', v_owner_id, v_worker_id, v_project_id, v_site_id;
 end $$;

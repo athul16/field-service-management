@@ -1,33 +1,22 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../core/supabase_config.dart';
+import '../core/api_client.dart';
 import '../models/shift.dart';
 
 /// Computes weekly hours from completed shifts for the timesheet screen.
 class TimesheetService {
-  final SupabaseClient _client = SupabaseConfig.client;
-
-  String get _workerId {
-    final id = _client.auth.currentUser?.id;
-    if (id == null) throw StateError('No signed-in worker.');
-    return id;
-  }
+  final _client = ApiClient.instance;
 
   /// Completed shifts for the week containing [anyDayInWeek] (Mon-Sun).
   Future<List<Shift>> fetchShiftsForWeek(DateTime anyDayInWeek) async {
     final weekStart = _startOfWeek(anyDayInWeek);
     final weekEnd = weekStart.add(const Duration(days: 7));
 
-    final rows = await _client
-        .from('shifts')
-        .select()
-        .eq('worker_id', _workerId)
-        .eq('status', 'completed')
-        .gte('clock_in_at', weekStart.toUtc().toIso8601String())
-        .lt('clock_in_at', weekEnd.toUtc().toIso8601String())
-        .order('clock_in_at');
+    final response = await _client.get('/api/timesheet/week', query: {
+      'weekStart': weekStart.toUtc().toIso8601String(),
+      'weekEnd': weekEnd.toUtc().toIso8601String(),
+    }) as Map<String, dynamic>;
 
-    return (rows as List).map((row) => Shift.fromMap(row)).toList();
+    final shifts = response['shifts'] as List;
+    return shifts.map((row) => Shift.fromMap(row as Map<String, dynamic>)).toList();
   }
 
   Duration totalHours(List<Shift> shifts) {

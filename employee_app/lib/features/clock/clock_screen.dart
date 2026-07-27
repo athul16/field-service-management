@@ -135,31 +135,111 @@ class _ClockScreenState extends State<ClockScreen> {
     );
   }
 
+  // A fixed, recognizable color per site (same site = same color every time)
+  // stands in for a real site photo — the app has no per-site imagery, and a
+  // random icon per site would imply a meaning ("warehouse" vs "store") that
+  // isn't actually there. Consistent icon + consistent color lets a worker
+  // recognize "my site" by shape/color alone, without needing to read the name.
+  static const _siteColors = [
+    Color(0xFF1565C0), // blue
+    Color(0xFF2E7D32), // green
+    Color(0xFFEF6C00), // orange
+    Color(0xFF6A1B9A), // purple
+    Color(0xFFAD1457), // pink
+    Color(0xFF00695C), // teal
+  ];
+
+  Color _colorForSite(Site site) => _siteColors[site.id.hashCode.abs() % _siteColors.length];
+
   List<Widget> _buildClockInForm() {
     return [
-      const Text('Select your work site', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-      const SizedBox(height: 12),
+      const Text('Select your work site', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 16),
       if (_sites.isEmpty)
-        const Text("You don't have any assigned sites yet. Check back soon.")
+        const Text(
+          "You don't have any assigned sites yet. Check back soon.",
+          style: TextStyle(fontSize: 16),
+        )
       else
-        DropdownButtonFormField<Site>(
-          initialValue: _selectedSite,
-          items: _sites
-              .map((site) => DropdownMenuItem(
-                    value: site,
-                    child: Text('${site.name} — ${site.projectName ?? ''}'),
-                  ))
-              .toList(),
-          onChanged: (site) => setState(() => _selectedSite = site),
-          decoration: const InputDecoration(labelText: 'Work site'),
-        ),
+        ..._sites.map(_buildSiteButton),
       const SizedBox(height: 24),
-      ElevatedButton.icon(
-        onPressed: _submitting ? null : _clockIn,
-        icon: const Icon(Icons.login),
-        label: Text(_submitting ? 'Clocking in...' : 'Clock In'),
+      SizedBox(
+        width: double.infinity,
+        height: 72,
+        child: ElevatedButton.icon(
+          onPressed: (_submitting || _selectedSite == null) ? null : _clockIn,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green.shade600,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Colors.grey.shade300,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          icon: const Icon(Icons.login, size: 32),
+          label: Text(
+            _submitting ? 'Starting shift...' : '🟢 Start Shift',
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          ),
+        ),
       ),
     ];
+  }
+
+  Widget _buildSiteButton(Site site) {
+    final selected = _selectedSite?.id == site.id;
+    final color = _colorForSite(site);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: selected ? color.withValues(alpha: 0.12) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => setState(() => _selectedSite = site),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: selected ? color : Colors.grey.shade300, width: selected ? 3 : 1),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  backgroundColor: color,
+                  child: const Icon(Icons.location_on, size: 34, color: Colors.white),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        site.name,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                      ),
+                      if (site.projectName != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          site.projectName!,
+                          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (selected)
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: color,
+                    child: const Icon(Icons.check, size: 20, color: Colors.white),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   List<Widget> _buildActiveShift(Shift shift) {
@@ -171,29 +251,69 @@ class _ClockScreenState extends State<ClockScreen> {
     return [
       Card(
         color: Colors.green.shade50,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('You are clocked in', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Text('Started at ${localClockIn.hour.toString().padLeft(2, '0')}:${localClockIn.minute.toString().padLeft(2, '0')}'),
-              Text('Elapsed: ${hours}h ${minutes}m'),
+              CircleAvatar(
+                radius: 44,
+                backgroundColor: Colors.green.shade600,
+                child: const Icon(Icons.access_time_filled, size: 48, color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'You are clocked in',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${hours}h ${minutes}m',
+                style: TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: Colors.green.shade800),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Started at ${localClockIn.hour.toString().padLeft(2, '0')}:${localClockIn.minute.toString().padLeft(2, '0')}',
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+              ),
             ],
           ),
         ),
       ),
-      const SizedBox(height: 24),
-      const Text(
-        'Clocking out requires a quick progress photo.',
-        style: TextStyle(fontSize: 14, color: Colors.black54),
+      const SizedBox(height: 28),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.camera_alt, size: 20, color: Colors.grey.shade600),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              'Clocking out needs a quick photo of your work.',
+              style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
       ),
-      const SizedBox(height: 12),
-      ElevatedButton.icon(
-        onPressed: _submitting ? null : _clockOut,
-        icon: const Icon(Icons.camera_alt),
-        label: Text(_submitting ? 'Clocking out...' : 'Take Photo & Clock Out'),
+      const SizedBox(height: 16),
+      SizedBox(
+        width: double.infinity,
+        height: 72,
+        child: ElevatedButton.icon(
+          onPressed: _submitting ? null : _clockOut,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red.shade600,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Colors.grey.shade300,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          icon: const Icon(Icons.camera_alt, size: 32),
+          label: Text(
+            _submitting ? 'Ending shift...' : '🔴 End Shift',
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          ),
+        ),
       ),
     ];
   }

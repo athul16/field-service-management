@@ -4,69 +4,89 @@ A lightweight field service operations platform for owners who manage projects a
 
 ## What this is
 
-Two connected pieces:
+Three connected pieces:
 
-1. **Employee mobile app** (this repo's `employee_app/`) — a simple Flutter app (Android + iOS) workers use to self-register, clock in/out at a work site, mark availability, and view their timesheet.
-2. **Owner web dashboard** (`owner_dashboard/`, coming next phase) — a website where the owner creates projects, assigns available workers, and monitors progress and clock-in history per worker.
+1. **Backend API** (`backend/`) — a Java Spring Boot REST API that owns **all** business logic, database access, authentication, and photo storage. Nothing else in this repo talks to the database directly.
+2. **Employee mobile app** (`employee_app/`) — a simple Flutter app (Android + iOS) workers use to log in with a phone number + PIN (issued by the owner), clock in/out at a work site, mark availability, and view their timesheet. There is no self-registration. It's a thin UI client of the backend API — it holds no database or auth credentials itself, only a session token.
+3. **Owner web dashboard** (`owner_dashboard/`, coming next phase) — a website where the owner creates projects and sites, onboards workers (creating their account and PIN, and assigning them to a site), and monitors progress and clock-in history per worker. It will call the same backend API the employee app already uses.
 
-Both are backed by a shared **Supabase** project (Postgres database, auth, and file storage for clock-out photos), so data syncs between the app and dashboard in real time.
+The backend's Postgres database currently happens to be hosted on Supabase (a holdover from how this project started), but the backend talks to it via a plain JDBC connection — none of Supabase's client-facing features (Auth, Storage, PostgREST, Row Level Security) are used. This was a deliberate choice: the database can be swapped to a different host/engine later without touching the mobile app or the API surface at all.
 
 ## Repository structure
 
 ```
 field-service-platform/
 ├── agents.md                # Ground rules for AI coding agents working in this repo
-├── employee_app/             # Flutter mobile app (workers)
+├── backend/                  # Java Spring Boot REST API — owns all business logic + DB access
+│   └── src/main/
+│       ├── java/com/fieldservice/backend/
+│       │   ├── config/        # Security config, bootstrap-owner runner, static resource config
+│       │   ├── security/      # JWT issuance/validation
+│       │   ├── controller/    # REST endpoints
+│       │   ├── service/       # Business logic + authorization checks
+│       │   ├── repository/    # Plain NamedParameterJdbcTemplate wrappers — no ORM
+│       │   ├── entity/        # Plain POJOs (raw UUID foreign keys, no JPA annotations)
+│       │   └── dto/           # Request/response shapes (entities are never serialized directly)
+│       └── resources/db/migration/  # Flyway — current schema source of truth
+├── employee_app/              # Flutter mobile app (workers) — thin UI client of backend/
 │   └── lib/
-│       ├── core/             # App-wide config, theme, routing
-│       ├── models/           # Data models (Worker, Project, Site, Shift, Availability)
-│       ├── services/         # Supabase-backed services (auth, clock, availability, timesheet)
-│       └── features/         # Screens, grouped by feature
-├── owner_dashboard/           # Owner-facing website (to be built)
-└── supabase/
-    └── migrations/            # SQL schema & row-level security policies
+│       ├── core/              # ApiClient (JWT-authenticated HTTP client), theme
+│       ├── models/             # Data models (Worker, Project, Site, Shift, Availability)
+│       ├── services/           # Thin wrappers over ApiClient, one per feature area
+│       └── features/           # Screens, grouped by feature
+├── owner_dashboard/            # Owner-facing website (to be built, against backend/'s API)
+└── supabase/                   # Historical — describes the schema before the backend migration;
+    └── migrations/             # backend/.../db/migration/ is the current source of truth now
 ```
 
 ## Features (from project spec)
 
 ### Employee side (mobile app)
-- Self-registration with name + phone (required), email (optional)
-- Clock in/out, tied to a selected work site; clock-out requires a progress photo
+- Log in with phone number + PIN — no self-registration; the owner creates the account and issues the PIN
+- **Attendance screen** (formerly "Clock In/Out"): Start Shift / End Shift, tied to a selected work site; ending a shift requires a progress photo. The backend verifies the worker is actually assigned to a site before allowing a shift to start, and that a shift belongs to the requesting worker before allowing it to end. The screen itself is designed for non-technical, low-literacy workers: work sites are picked from large tappable cards (a colored icon per site, not a text dropdown — the same site always gets the same color) instead of a list, and Start Shift / End Shift are big full-width green/red buttons (🟢 Start Shift / 🔴 End Shift) rather than small text buttons
+- A worker only ever sees the project(s)/site(s) they've been assigned to
 - Simple drag-to-select availability calendar for upcoming weeks
 - Weekly timesheet view of hours completed
 
 ### Owner side (web dashboard — next phase)
 - Create projects with location and timeline
 - Open a project to see all sites, assign available workers, and notify them (push/email/SMS)
+- **Employee onboarding**: create a worker's account (name, phone), assign them to a project/site, and issue their initial login PIN — shown once so the owner can share it with the worker directly (in person, by message, etc.)
+- Reset a worker's PIN at any time if they forget it
 - View completed/in-progress status per worker per site
 - Drill into any worker to see their full clock-in/out history, including photos
+
+**All of the above already exist as backend REST endpoints** (`/api/owner/workers`, `/api/owner/projects`, `/api/owner/projects/{id}/sites`, `/api/owner/assignments`, `/api/owner/shifts`) — building the dashboard is now purely a frontend exercise against an already-working, already-tested API.
 
 ## Tech stack
 
 | Layer | Choice |
 |---|---|
 | Mobile app | Flutter (single codebase, Android + iOS) |
-| Backend | Supabase (Postgres, Auth, Storage, Realtime) |
-| Owner dashboard | TBD — planned as a web app reading from the same Supabase project |
+| Backend | Java 21, Spring Boot (Web, JDBC, Security), plain `NamedParameterJdbcTemplate` (no ORM), Flyway, JWT (jjwt) |
+| Database | Postgres (currently Supabase-hosted, accessed via plain JDBC — no Supabase client features in use) |
+| Owner dashboard | TBD — will call the backend's REST API, same as the mobile app |
 
-## Getting started (employee app)
+## Getting started
 
-See [`employee_app/README.md`](employee_app/README.md) for setup, environment variables, and how to run the app locally.
+### Backend
+1. Copy `backend/.env.example` to `backend/.env` and fill in the database connection details (from your Postgres host's connection-pooling info, not a direct/IPv6-only connection if applicable) and a JWT secret.
+2. Run: `set -a && source backend/.env && set +a && mvn -f backend spring-boot:run`
+3. Confirm it's up: `curl http://localhost:8080/api/ping` → `{"status":"ok"}`
 
-## Backend
+See [`agents.md`](agents.md)'s Environment notes for connection-pooler gotchas if the database is Supabase-hosted.
 
-See [`supabase/migrations`](supabase/migrations) for the current database schema. Apply migrations with the Supabase CLI:
-
-```bash
-supabase link --project-ref <your-project-ref>
-supabase db push
-```
+### Employee app
+See [`employee_app/README.md`](employee_app/README.md) for setup and how to run the app locally. Set `API_BASE_URL` in `employee_app/.env` to the backend's address (`http://10.0.2.2:8080` from the Android emulator, `http://localhost:8080` from iOS Simulator).
 
 ## Status
 
-🚧 Early build. Verified end-to-end on the Android emulator against the live Supabase project: registration, login, clock-in, and clock-out (with progress photo) all work. Owner dashboard has not been started yet.
+🚧 Early build, but the hard architectural work is done. The full migration away from Supabase's client SDK (Auth, Storage, PostgREST, RLS) to a self-owned Java backend is complete and verified end-to-end on the Android emulator: login, clock-in (with site-assignment verification), clock-out (with photo upload), availability, and the weekly timesheet all work against the real backend. The owner-side REST endpoints exist and are tested but have no UI yet — `owner_dashboard/` is still just a README describing what to build.
 
-Since the initial scaffold:
-- Added the `shift-photos` storage bucket and its RLS upload policy ([`0003_create_shift_photos_bucket.sql`](supabase/migrations/0003_create_shift_photos_bucket.sql)) — clock-out photo uploads need it and no earlier migration created it.
-- Fixed several UTC/local-time bugs: clock-out was sending a naive local timestamp that Postgres read as UTC, tripping a "clock-out before clock-in" check constraint; the "Started at" time on the Clock screen and both fields on the Timesheet screen were displaying raw UTC instead of local time; and the Timesheet's "this week" query had the same local/UTC mismatch on its date-range filter.
-- Added a live-updating elapsed-time counter on the Clock In/Out screen — it now ticks on its own every 30 seconds instead of only refreshing when the screen re-rendered for an unrelated reason.
+Recent history:
+- Replaced self-registration and phone/OTP login with owner-provisioned phone + PIN login, removing the Twilio/SMS dependency entirely.
+- **Migrated the entire backend from Supabase's client SDK to a Java Spring Boot API** that owns all business logic, database access, JWT-based auth, and clock-out photo storage. Authorization (who can see/touch what) now lives in the backend's service layer instead of Postgres RLS. See `agents.md` for the detailed rationale and the gotchas hit along the way (Supabase's IPv6-only direct connection, connection-pooler tenant routing, a Hibernate lazy-loading trap, a Postgres/JDBC null-parameter-type quirk, and a Flutter Android Gradle dependency conflict).
+- **Replaced Spring Data JPA/Hibernate with plain `NamedParameterJdbcTemplate`.** Hibernate had already caused the lazy-loading and null-parameter bugs mentioned above; entities are now plain POJOs with raw `UUID` foreign keys (no lazy loading possible) and repositories are hand-written, explicit SQL — full regression suite re-verified end-to-end. See `agents.md`'s Java/Spring Boot conventions and Status section for the design and the two regressions specifically guarded against (SQL-side dedup, no redundant re-reads on writes that already have their data in scope).
+- Fixed several UTC/local-time display and query bugs across the clock, timesheet, and availability screens — see `agents.md`'s Timestamps convention for the rule that keeps these from recurring.
+- Added a Postman collection (`backend/postman/field-service-platform.postman_collection.json`) covering every endpoint, for manual testing and data-seeding ahead of `owner_dashboard` having a real UI.
+- **Redesigned the Clock In/Out screen as "Attendance"** for non-technical, low-literacy workers: work sites are now large tappable cards with a consistent color-coded icon per site instead of a dropdown list, and Start Shift / End Shift are big full-width green/red buttons. Scoped deliberately to just this one screen (a prior full-app graphical redesign was built and then explicitly reverted earlier in the project) — verified end-to-end on the Android emulator, including the photo upload on End Shift.

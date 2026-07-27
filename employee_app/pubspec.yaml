@@ -11,8 +11,10 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.6
 
-  # Backend
-  supabase_flutter: ^2.5.6
+  # Backend — talks to the Java Spring Boot API, not Supabase directly
+  http: ^1.2.0
+  http_parser: ^4.0.2               # explicit Content-Type on the clock-out photo multipart upload
+  flutter_secure_storage: ^9.2.2   # stores the JWT (Keychain / EncryptedSharedPreferences)
 
   # UI / UX
   table_calendar: ^3.1.2      # simple drag-to-select availability calendar
@@ -29,6 +31,15 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+
+# path_provider_android >=2.3.0 depends on the `jni` package, whose Android
+# build script uses a Kotlin Gradle DSL method incompatible with this
+# project's existing Kotlin/AGP toolchain (fails with "Could not find
+# method kotlin()"). Pinned to the last version before that switch, rather
+# than upgrading the whole project's Kotlin/Gradle setup for one transitive
+# dependency.
+dependency_overrides:
+  path_provider_android: 2.2.15
 
 flutter:
   uses-material-design: true
