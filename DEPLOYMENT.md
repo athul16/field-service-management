@@ -40,13 +40,15 @@ does not affect the dashboard — free Static Sites stay always-on.
 ## 2. Owner dashboard → Render (Static Site)
 
 `render.yaml` already defines `field-service-dashboard` as a static site (`runtime: static`, root
-`owner_dashboard`, build `npm install && npm run build`, publish path `owner_dashboard/dist`), with
-a rewrite route (`/* → /index.html`) so client-side routing (React Router) doesn't 404 on refresh —
-same job `vercel.json` used to do, just expressed in `render.yaml` instead. `VITE_API_BASE_URL` is
-already set in the Blueprint to the backend's Render URL, so nothing to fill in by hand here. If the
-Blueprint sync doesn't pick up this service automatically, trigger it manually from the Blueprint's
-"Manual sync" button. Note the resulting URL — something like
-`https://field-service-dashboard.onrender.com`.
+`owner_dashboard`, build `npm install && npm run build`, publish path `dist`), with a rewrite route
+(`/* → /index.html`) so client-side routing (React Router) doesn't 404 on refresh — same job
+`vercel.json` used to do, just expressed in `render.yaml` instead. Note: `staticPublishPath` is
+relative to `rootDir` once `rootDir` is set (not the repo root) — this tripped up the first deploy,
+which used `owner_dashboard/dist` and got `Publish directory owner_dashboard/dist does not exist!`
+right after a successful build. `VITE_API_BASE_URL` is already set in the Blueprint to the backend's
+Render URL, so nothing to fill in by hand here. If the Blueprint sync doesn't pick up this service
+automatically, trigger it manually from the Blueprint's "Manual sync" button. Note the resulting
+URL — something like `https://field-service-dashboard.onrender.com`.
 
 ## 3. Close the loop: update CORS on Render
 
@@ -87,3 +89,9 @@ frequent enough that manual cleanup is a real burden.
 - Hit the Render `/api/ping` URL 5 minutes early to avoid the cold-start delay live on the call.
 - Confirm the Supabase project isn't paused (free-tier Supabase projects can pause after a period of
   inactivity — check its dashboard if it's been a while since the last demo).
+- **Stop any local dev backend before redeploying or demoing.** The Supabase connection pooler this
+  app uses caps the whole project at 10 session-mode clients; the backend's Hikari pool alone holds
+  5 warm connections per running instance. A local `mvn spring-boot:run` left running while Render
+  redeploys can push the total over 10, and the deploy fails with
+  `FATAL: (EMAXCONNSESSION) max clients reached in session mode` — a real failure this hit once, not
+  a hypothetical.
