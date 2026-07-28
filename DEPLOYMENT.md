@@ -10,13 +10,19 @@ The backend needs to know the dashboard's URL (for CORS) and the dashboard needs
 backend's URL (to call the API). Deploy backend first, get its URL, deploy the dashboard with that
 URL, then go back and update the backend's CORS setting with the dashboard's final URL.
 
+Both services live under one Render account/Blueprint (`render.yaml`) — no second hosting provider
+needed. Render's free Static Sites have no cold-start/spin-down penalty (that only applies to free
+*Web Services*, i.e. the backend), so this is simpler than a two-provider (Render + Vercel) split
+without giving up anything this use case needs.
+
 ## 1. Backend → Render
 
 This repo already has a GitHub remote connected. On [render.com](https://render.com):
 
 1. Sign up / log in, **New → Blueprint**, connect this GitHub repo.
-2. Render reads `render.yaml` at the repo root automatically and proposes one web service
-   (`field-service-backend`, Docker-based, free plan).
+2. Render reads `render.yaml` at the repo root automatically and proposes two services: the
+   `field-service-backend` web service (Docker-based, free plan) and the `field-service-dashboard`
+   static site (see step 2 below) — both from the same Blueprint sync.
 3. It will prompt for the env vars marked secret in `render.yaml` — fill these in from
    `backend/.env` (**do not commit that file** — copy the values by hand into Render's dashboard):
    `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `BOOTSTRAP_OWNER_PHONE`,
@@ -26,28 +32,29 @@ This repo already has a GitHub remote connected. On [render.com](https://render.
    something like `https://field-service-backend.onrender.com`.
 5. Confirm it's actually up: `curl https://<your-render-url>/api/ping` → `{"status":"ok"}`.
 
-**The real tradeoff of the free plan**: it spins down after 15 minutes of no traffic, and the next
-request pays a ~30-60 second cold-start cost. For a live demo call, **hit that `/api/ping` URL
-yourself 5 minutes before you start** so the client never sees the cold start.
+**The real tradeoff of the free plan**: the backend web service spins down after 15 minutes of no
+traffic, and the next request pays a ~30-60 second cold-start cost. For a live demo call, **hit that
+`/api/ping` URL yourself 5 minutes before you start** so the client never sees the cold start. This
+does not affect the dashboard — free Static Sites stay always-on.
 
-## 2. Owner dashboard → Vercel
+## 2. Owner dashboard → Render (Static Site)
 
-1. On [vercel.com](https://vercel.com), **New Project**, import the same GitHub repo.
-2. Set **Root Directory** to `owner_dashboard` (this is a monorepo — Vercel needs to know which
-   subfolder is the actual app).
-3. Framework preset should auto-detect Vite. Build command `npm run build`, output `dist` (default
-   — no need to override).
-4. Add an environment variable: `VITE_API_BASE_URL` = the Render URL from step 1.
-5. Deploy. Note the resulting URL — something like `https://field-service-dashboard.vercel.app`.
-6. A `vercel.json` at `owner_dashboard/`'s root already handles client-side routing (React Router) —
-   without it, refreshing on a page like `/workers/123` would 404 on Vercel's static hosting.
+`render.yaml` already defines `field-service-dashboard` as a static site (`runtime: static`, root
+`owner_dashboard`, build `npm install && npm run build`, publish path `owner_dashboard/dist`), with
+a rewrite route (`/* → /index.html`) so client-side routing (React Router) doesn't 404 on refresh —
+same job `vercel.json` used to do, just expressed in `render.yaml` instead. `VITE_API_BASE_URL` is
+already set in the Blueprint to the backend's Render URL, so nothing to fill in by hand here. If the
+Blueprint sync doesn't pick up this service automatically, trigger it manually from the Blueprint's
+"Manual sync" button. Note the resulting URL — something like
+`https://field-service-dashboard.onrender.com`.
 
 ## 3. Close the loop: update CORS on Render
 
-Back in Render's dashboard, edit `CORS_ALLOWED_ORIGINS` to the Vercel URL from step 2 (comma-separate
-if you also want `localhost:5173` for your own local testing against the deployed backend). Redeploy.
-Without this, the dashboard's API calls will fail with a CORS error in the browser console — the
-symptom is requests that look fine in the Network tab status-wise but the browser blocks the response.
+Back in the backend service's Environment tab, edit `CORS_ALLOWED_ORIGINS` to the dashboard's Render
+URL from step 2 (comma-separate if you also want `localhost:5173` for your own local testing against
+the deployed backend). Redeploy. Without this, the dashboard's API calls will fail with a CORS error
+in the browser console — the symptom is requests that look fine in the Network tab status-wise but
+the browser blocks the response.
 
 ## 4. Android app → Firebase App Distribution (free, "a few users")
 
