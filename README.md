@@ -95,6 +95,9 @@ See [`employee_app/README.md`](employee_app/README.md) for setup and how to run 
 
 See [`owner_dashboard/README.md`](owner_dashboard/README.md) for the full page/component breakdown.
 
+### Deploying a demo/trial environment
+See [`DEPLOYMENT.md`](DEPLOYMENT.md) for a free-tier cloud deploy (backend on Render, dashboard on Vercel, Android via Firebase App Distribution) — useful for showing this to a prospective client or giving a small group limited-time trial access.
+
 ## Status
 
 🚧 Early build, but the hard architectural work is done. The full migration away from Supabase's client SDK (Auth, Storage, PostgREST, RLS) to a self-owned Java backend is complete and verified end-to-end on the Android emulator: login, clock-in (with site-assignment verification), clock-out (with photo upload), availability, and the weekly timesheet all work against the real backend. The owner dashboard now has a working UI against every one of these endpoints (see Recent history below).
