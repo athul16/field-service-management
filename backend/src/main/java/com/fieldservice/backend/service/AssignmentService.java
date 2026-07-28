@@ -70,4 +70,9 @@ public class AssignmentService {
     public List<AssignmentResponse> listAssignmentsForWorker(UUID workerId) {
         return assignmentRepository.findResponsesByWorkerId(workerId);
     }
+
+    @Transactional(readOnly = true)
+    public List<AssignmentResponse> listAll() {
+        return assignmentRepository.findAllResponses();
+    }
 }

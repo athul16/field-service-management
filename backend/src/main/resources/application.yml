@@ -57,5 +57,5 @@ app:
     phone: ${BOOTSTRAP_OWNER_PHONE:}
     pin: ${BOOTSTRAP_OWNER_PIN:}
     full-name: ${BOOTSTRAP_OWNER_NAME:Owner}
-  photo-storage:
-    base-dir: ${PHOTO_STORAGE_DIR:./data/photos}
+  photo-retention:
+    days: ${PHOTO_RETENTION_DAYS:30}

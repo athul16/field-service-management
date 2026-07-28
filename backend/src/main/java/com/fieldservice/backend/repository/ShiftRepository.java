@@ -80,8 +80,10 @@ public class ShiftRepository {
             return shifts;
         }
         List<UUID> ids = shifts.stream().map(ShiftResponse::id).toList();
+        // photo_url isn't a stored column — photos live in the DB now (see DatabasePhotoStorageService),
+        // so the URL is just the row's own id under /photos/.
         Map<UUID, List<String>> photosByShift = jdbc.query(
-                "select shift_id, photo_url from shift_photos where shift_id in (:ids) order by shift_id, position",
+                "select shift_id, ('/photos/' || id::text) as photo_url from shift_photos where shift_id in (:ids) order by shift_id, position",
                 new MapSqlParameterSource("ids", ids),
                 rs -> {
                     Map<UUID, List<String>> map = new LinkedHashMap<>();
@@ -153,18 +155,18 @@ public class ShiftRepository {
                         .addValue("status", ShiftStatus.COMPLETED.toDbValue()));
     }
 
-    /** photoUrls must already be in the desired display order — position is assigned from list index (0-2). */
-    public void insertPhotos(UUID shiftId, List<String> photoUrls) {
-        for (int position = 0; position < photoUrls.size(); position++) {
-            jdbc.update(
-                    "insert into shift_photos (id, shift_id, photo_url, position) values (:id, :shiftId, :photoUrl, :position)",
-                    new MapSqlParameterSource()
-                            .addValue("id", UUID.randomUUID())
-                            .addValue("shiftId", shiftId)
-                            .addValue("photoUrl", photoUrls.get(position))
-                            .addValue("position", position));
-        }
+    /** Used by PhotoRetentionService's scheduled purge — returns how many photo rows were deleted. */
+    public int deletePhotosForShiftsClockedOutBefore(Instant cutoff) {
+        return jdbc.update(
+                """
+                delete from shift_photos sp
+                using shifts s
+                where sp.shift_id = s.id
+                and s.clock_out_at < :cutoff
+                """,
+                new MapSqlParameterSource("cutoff", Timestamp.from(cutoff)));
     }
+
 
     public void confirmShift(UUID shiftId, UUID confirmedByOwnerId) {
         jdbc.update(

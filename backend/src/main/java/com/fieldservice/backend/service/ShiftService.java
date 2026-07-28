@@ -82,7 +82,12 @@ public class ShiftService {
 
     private static final int MAX_CLOCK_OUT_PHOTOS = 3;
 
-    /** One atomic request: upload each photo, then mark the shift completed — no orphaned photos if any step fails on its own. */
+    /**
+     * One atomic request: insert each photo row, then mark the shift completed. Photo storage
+     * is itself a DB insert now (see DatabasePhotoStorageService), so the whole thing lives in
+     * one transaction — a failure partway through leaves no orphaned photos or half-updated
+     * shifts, unlike the old local-disk version where a file write couldn't roll back with the SQL.
+     */
     @Transactional
     public ShiftResponse clockOut(Profile worker, UUID shiftId, List<MultipartFile> photos) {
         if (photos.isEmpty() || photos.size() > MAX_CLOCK_OUT_PHOTOS) {
@@ -97,11 +102,10 @@ public class ShiftService {
             throw new IllegalArgumentException("That shift is already completed");
         }
 
-        List<String> photoUrls = photos.stream()
-                .map(photo -> photoStorageService.store(worker.getId(), shiftId, photo))
-                .toList();
+        for (int position = 0; position < photos.size(); position++) {
+            photoStorageService.store(shiftId, position, photos.get(position));
+        }
 
-        shiftRepository.insertPhotos(shiftId, photoUrls);
         shiftRepository.updateClockOut(shiftId, Instant.now());
         return shiftRepository.findResponseById(shiftId);
     }

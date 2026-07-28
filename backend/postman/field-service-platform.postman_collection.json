@@ -725,6 +725,30 @@
 							]
 						}
 					}
+				},
+				{
+					"name": "List All Assignments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{owner_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/owner/assignments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"owner",
+								"assignments"
+							]
+						},
+						"description": "Every assignment across every worker — backs the Reports page's project attribution, since a shift only carries a siteId, not a projectId."
+					}
 				}
 			]
 		},

@@ -97,4 +97,22 @@ public class AssignmentRepository {
                 new MapSqlParameterSource("workerId", workerId),
                 RESPONSE_ROW_MAPPER);
     }
+
+    /**
+     * Every assignment across every worker — used by the Reports page to attribute a shift
+     * (which only carries a siteId, not a projectId) to a project via (workerId, siteId).
+     */
+    public List<AssignmentResponse> findAllResponses() {
+        return jdbc.query(
+                """
+                select a.id, a.project_id, p.name as project_name, a.site_id, s.name as site_name,
+                       s.address as site_address, a.worker_id, w.full_name as worker_name, a.assigned_at
+                from assignments a
+                join projects p on p.id = a.project_id
+                join sites s on s.id = a.site_id
+                join profiles w on w.id = a.worker_id
+                order by a.assigned_at desc
+                """,
+                RESPONSE_ROW_MAPPER);
+    }
 }

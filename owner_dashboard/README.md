@@ -1,6 +1,8 @@
 # Owner Dashboard
 
-React + Vite web app for the business owner: create sites (permanent physical locations) and one or more projects under each site over time (with an active/closed status), onboard workers with an auto-generated login PIN, assign workers to projects, view each worker's assignments/availability/shift history, and report a worker's total hours by month/quarter/year. Calls the same Java Spring Boot `backend/` API the `employee_app` mobile app uses — this app holds no database credentials of its own, only a JWT for the backend.
+React + Vite web app for the business owner: a live Home dashboard (KPIs, recent activity, hours-by-site, sites overview), create sites (permanent physical locations) and one or more projects under each site over time (with an active/closed status), onboard workers with an auto-generated login PIN, assign workers to projects, view each worker's assignments/availability/shift history, and a Reports page (custom date range plus hours-by-worker/project/site bar charts). Calls the same Java Spring Boot `backend/` API the `employee_app` mobile app uses — this app holds no database credentials of its own, only a JWT for the backend.
+
+Visual identity is "Blueprint" — a deep-cobalt accent, sharp-ish corners, and a fixed dark-navy sidebar, chosen (from three pitched directions) to read as credible enterprise software rather than a demo app. Every color/radius is a CSS custom property in `src/index.css`, not a one-off hex value.
 
 ## Prerequisites
 
@@ -31,17 +33,24 @@ Open http://localhost:5173 and log in with an owner's phone number + PIN.
 src/
 ├── api/client.js           # fetch wrapper — attaches the JWT, normalizes error responses
 ├── auth/                   # AuthContext (login/logout, role check), ProtectedRoute
-├── layout/AppLayout.jsx     # sidebar + top bar shell for authenticated pages
-├── components/PinRevealModal.jsx  # shows a generated/reset PIN exactly once
+├── layout/AppLayout.jsx     # fixed left sidebar shell (nav + user/logout) for authenticated pages
+├── lib/hours.js             # formatHours/hoursOf/aggregateHours — shared by Home + Reports
+├── components/
+│   ├── PinRevealModal.jsx  # shows a generated/reset PIN exactly once
+│   ├── BarChart.jsx        # hand-rolled horizontal bar list (no charting library)
+│   ├── StatusBadge.jsx     # active/closed status pill
+│   ├── PhoneInput.jsx      # country-code select + national-number input, builds E.164
+│   └── Icons.jsx           # hand-rolled inline SVG icon set
 ├── pages/
 │   ├── LoginPage.jsx
+│   ├── HomePage.jsx            # KPI tiles, recent-activity feed, hours-by-site chart, sites overview
 │   ├── SitesPage.jsx           # list + create
 │   ├── SiteDetailPage.jsx      # site info + its projects (list + create)
 │   ├── ProjectsPage.jsx        # all-projects list (read-only; create happens from a site)
 │   ├── ProjectDetailPage.jsx   # project info + its one site + close/reopen status toggle
 │   ├── WorkersPage.jsx         # list + create (PIN shown once on creation)
 │   ├── WorkerDetailPage.jsx    # profile, reset PIN, assign to project, assignments/availability/shifts
-│   └── ReportsPage.jsx         # worker + month/quarter/year picker -> total completed hours
+│   └── ReportsPage.jsx         # date-range picker (presets + custom) + optional worker filter -> hours-by-worker/project/site bar charts
 └── App.jsx                  # routes
 ```
 

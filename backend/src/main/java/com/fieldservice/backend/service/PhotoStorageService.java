@@ -4,6 +4,9 @@ import java.util.UUID;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface PhotoStorageService {
-    /** Returns a URL path (e.g. "/photos/<workerId>/<file>") the app can resolve against its API base URL. */
-    String store(UUID workerId, UUID shiftId, MultipartFile file);
+    /**
+     * Stores one clock-out photo at the given position (0-2, upload order) for a shift and
+     * returns a URL the app can resolve against its API base URL (e.g. "/photos/<id>").
+     */
+    String store(UUID shiftId, int position, MultipartFile file);
 }

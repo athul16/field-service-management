@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { api } from '../api/client';
 import { PinRevealModal } from '../components/PinRevealModal';
 import { buildE164, PhoneInput, usePhoneCountries } from '../components/PhoneInput';
 
 export function WorkersPage() {
+  // The Home dashboard's "+ New worker" quick action links here with this flag
+  // set, so the form is already open instead of making the owner click twice.
+  const location = useLocation();
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(Boolean(location.state?.openForm));
   const [pinReveal, setPinReveal] = useState(null); // { workerName, pin }
 
   useEffect(() => {
