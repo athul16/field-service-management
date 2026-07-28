@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import '../core/api_client.dart';
+import '../models/assignment.dart';
 import '../models/shift.dart';
-import '../models/site.dart';
 
 /// Handles everything related to clocking in/out at a site. The backend
 /// infers the current worker from the JWT on every call (and verifies
@@ -11,10 +11,11 @@ import '../models/site.dart';
 class ClockService {
   final _client = ApiClient.instance;
 
-  /// Sites the current worker has been assigned to (via the owner dashboard).
-  Future<List<Site>> fetchAssignedSites() async {
-    final rows = await _client.get('/api/sites/assigned') as List;
-    return rows.map((row) => Site.fromMap(row as Map<String, dynamic>)).toList();
+  /// The current worker's own assignments — one per (site, project) pair, since a site can now
+  /// host more than one project and a worker can be assigned to more than one at the same site.
+  Future<List<Assignment>> fetchMyAssignments() async {
+    final rows = await _client.get('/api/assignments') as List;
+    return rows.map((row) => Assignment.fromMap(row as Map<String, dynamic>)).toList();
   }
 
   /// The worker's currently open shift, if any (they haven't clocked out yet).
@@ -28,15 +29,15 @@ class ClockService {
     return Shift.fromMap(row as Map<String, dynamic>);
   }
 
-  /// Clocking out requires a progress photo, per the project spec.
+  /// Clocking out requires 1-3 progress photos, per the project spec.
   Future<Shift> clockOut({
     required String shiftId,
-    required File progressPhoto,
+    required List<File> progressPhotos,
   }) async {
     final row = await _client.postMultipart(
       '/api/shifts/$shiftId/clock-out',
-      fieldName: 'photo',
-      file: progressPhoto,
+      fieldName: 'photos',
+      files: progressPhotos,
     );
     return Shift.fromMap(row as Map<String, dynamic>);
   }

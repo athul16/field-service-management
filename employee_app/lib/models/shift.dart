@@ -5,7 +5,7 @@ class Shift {
   final String? siteName;
   final DateTime clockInAt;
   final DateTime? clockOutAt;
-  final String? clockOutPhotoUrl;
+  final List<String> clockOutPhotoUrls;
   final String status; // IN_PROGRESS | COMPLETED
 
   const Shift({
@@ -15,7 +15,7 @@ class Shift {
     this.siteName,
     required this.clockInAt,
     this.clockOutAt,
-    this.clockOutPhotoUrl,
+    this.clockOutPhotoUrls = const [],
     required this.status,
   });
 
@@ -34,7 +34,7 @@ class Shift {
       siteName: map['siteName'] as String?,
       clockInAt: DateTime.parse(map['clockInAt'] as String),
       clockOutAt: map['clockOutAt'] != null ? DateTime.parse(map['clockOutAt'] as String) : null,
-      clockOutPhotoUrl: map['clockOutPhotoUrl'] as String?,
+      clockOutPhotoUrls: (map['clockOutPhotoUrls'] as List?)?.cast<String>() ?? const [],
       status: map['status'] as String,
     );
   }

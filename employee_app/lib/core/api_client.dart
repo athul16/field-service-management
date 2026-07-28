@@ -83,15 +83,18 @@ class ApiClient {
     return _handle(response);
   }
 
-  /// Multipart POST for the clock-out photo upload.
-  Future<dynamic> postMultipart(String path, {required String fieldName, required File file}) async {
+  /// Multipart POST for the clock-out photo upload(s) — every file rides under the same
+  /// [fieldName] (repeated parts), matching how the backend binds a `List<MultipartFile>`.
+  Future<dynamic> postMultipart(String path, {required String fieldName, required List<File> files}) async {
     final request = http.MultipartRequest('POST', _uri(path));
     if (_token != null) {
       request.headers['Authorization'] = 'Bearer $_token';
     }
-    final extension = file.path.split('.').last.toLowerCase();
-    final contentType = extension == 'png' ? MediaType('image', 'png') : MediaType('image', 'jpeg');
-    request.files.add(await http.MultipartFile.fromPath(fieldName, file.path, contentType: contentType));
+    for (final file in files) {
+      final extension = file.path.split('.').last.toLowerCase();
+      final contentType = extension == 'png' ? MediaType('image', 'png') : MediaType('image', 'jpeg');
+      request.files.add(await http.MultipartFile.fromPath(fieldName, file.path, contentType: contentType));
+    }
 
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);

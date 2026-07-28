@@ -2,7 +2,6 @@ package com.fieldservice.backend.service;
 
 import com.fieldservice.backend.dto.AssignmentResponse;
 import com.fieldservice.backend.dto.CreateAssignmentRequest;
-import com.fieldservice.backend.dto.SiteResponse;
 import com.fieldservice.backend.entity.Assignment;
 import com.fieldservice.backend.entity.Profile;
 import com.fieldservice.backend.entity.Project;
@@ -56,6 +55,7 @@ public class AssignmentService {
                 project.getName(),
                 site.getId(),
                 site.getName(),
+                site.getAddress(),
                 worker.getId(),
                 worker.getFullName(),
                 saved.getAssignedAt());
@@ -69,11 +69,5 @@ public class AssignmentService {
     @Transactional(readOnly = true)
     public List<AssignmentResponse> listAssignmentsForWorker(UUID workerId) {
         return assignmentRepository.findResponsesByWorkerId(workerId);
-    }
-
-    /** Sites a worker can clock in at — the employee app's site picker. */
-    @Transactional(readOnly = true)
-    public List<SiteResponse> listSitesForWorker(UUID workerId) {
-        return assignmentRepository.findDistinctSitesForWorker(workerId);
     }
 }

@@ -15,6 +15,7 @@ public record AssignmentResponse(
         String projectName,
         UUID siteId,
         String siteName,
+        String siteAddress,
         UUID workerId,
         String workerName,
         Instant assignedAt) {

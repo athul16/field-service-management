@@ -72,7 +72,7 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
             for (final monday in options)
               ListTile(
                 title: Text(
-                  'Week of ${monday.month}/${monday.day}',
+                  _weekRangeLabel(monday),
                   style: const TextStyle(fontSize: 16),
                 ),
                 onTap: () => Navigator.pop(context, monday),
@@ -159,7 +159,9 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        _view == _TimesheetView.week ? 'Week of ${_weekStartLabel()}' : _monthYearLabel(_referenceDay),
+                        _view == _TimesheetView.week
+                            ? _weekRangeLabel(_startOfWeek(_referenceDay))
+                            : _monthYearLabel(_referenceDay),
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(width: 4),
@@ -200,7 +202,7 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
                         final worked = shift.workedDuration!;
                         return Card(
                           child: ListTile(
-                            title: Text(_dayLabel(shift.clockInAt.toLocal())),
+                            title: Text(_dateLabel(shift.clockInAt.toLocal())),
                             subtitle: Text(
                               '${_timeLabel(shift.clockInAt.toLocal())} – ${_timeLabel(shift.clockOutAt!.toLocal())}',
                             ),
@@ -214,11 +216,6 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
     );
   }
 
-  String _weekStartLabel() {
-    final monday = _startOfWeek(_referenceDay);
-    return '${monday.month}/${monday.day}';
-  }
-
   static const _monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
@@ -226,7 +223,16 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
 
   String _monthYearLabel(DateTime d) => '${_monthNames[d.month - 1]} ${d.year}';
 
-  String _dayLabel(DateTime d) => '${d.month}/${d.day}';
+  // "27 Jul" instead of "7/27" — a numeric month/day is read as day-first
+  // almost everywhere outside the US (is "7/27" the 7th of month 27, or
+  // July 27th?). Spelling the month out removes the ambiguity for every
+  // reader regardless of which convention they're used to.
+  String _dateLabel(DateTime d) => '${d.day} ${_monthNames[d.month - 1].substring(0, 3)}';
+
+  String _weekRangeLabel(DateTime monday) {
+    final sunday = monday.add(const Duration(days: 6));
+    return '${_dateLabel(monday)} – ${_dateLabel(sunday)}';
+  }
 
   String _timeLabel(DateTime d) =>
       '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';

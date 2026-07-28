@@ -5,6 +5,7 @@ import com.fieldservice.backend.dto.ShiftResponse;
 import com.fieldservice.backend.entity.Profile;
 import com.fieldservice.backend.service.ShiftService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -38,11 +39,12 @@ public class WorkerShiftController {
         return shiftService.clockIn(currentUser, request.siteId());
     }
 
+    /** 1-3 photos, all under the same "photos" part name — ShiftService.clockOut enforces the count. */
     @PostMapping(value = "/api/shifts/{shiftId}/clock-out", consumes = "multipart/form-data")
     public ShiftResponse clockOut(
             @PathVariable UUID shiftId,
-            @RequestParam("photo") MultipartFile photo,
+            @RequestParam("photos") List<MultipartFile> photos,
             @AuthenticationPrincipal Profile currentUser) {
-        return shiftService.clockOut(currentUser, shiftId, photo);
+        return shiftService.clockOut(currentUser, shiftId, photos);
     }
 }

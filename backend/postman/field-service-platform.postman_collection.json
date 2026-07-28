@@ -876,7 +876,7 @@
 			"name": "Worker - Sites & Shifts",
 			"item": [
 				{
-					"name": "List Assigned Sites",
+					"name": "List My Assignments",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -886,14 +886,13 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/sites/assigned",
+							"raw": "{{base_url}}/api/assignments",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"sites",
-								"assigned"
+								"assignments"
 							]
 						}
 					}
@@ -986,7 +985,12 @@
 							"mode": "formdata",
 							"formdata": [
 								{
-									"key": "photo",
+									"key": "photos",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "photos",
 									"type": "file",
 									"src": []
 								}
@@ -1004,7 +1008,7 @@
 								"clock-out"
 							]
 						},
-						"description": "In Postman's Body tab, click the 'photo' field's file picker and choose any image file from your machine before sending."
+						"description": "In Postman's Body tab, each 'photos' row's file picker needs an image chosen before sending. Add or remove 'photos' rows to send between 1 and 3 photos — same key repeated, not an array field name."
 					}
 				}
 			]

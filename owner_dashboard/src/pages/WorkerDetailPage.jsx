@@ -159,10 +159,14 @@ export function WorkerDetailPage() {
                   <StatusBadge status={shift.status === 'COMPLETED' ? 'active' : 'closed'} label={shift.status} />
                 </td>
                 <td>
-                  {shift.clockOutPhotoUrl ? (
-                    <a href={`${BASE_URL}${shift.clockOutPhotoUrl}`} target="_blank" rel="noreferrer">
-                      <img className="shift-photo-thumb" src={`${BASE_URL}${shift.clockOutPhotoUrl}`} alt="Clock-out proof" />
-                    </a>
+                  {shift.clockOutPhotoUrls?.length ? (
+                    <div className="shift-photo-row">
+                      {shift.clockOutPhotoUrls.map((url) => (
+                        <a key={url} href={`${BASE_URL}${url}`} target="_blank" rel="noreferrer">
+                          <img className="shift-photo-thumb" src={`${BASE_URL}${url}`} alt="Clock-out proof" />
+                        </a>
+                      ))}
+                    </div>
                   ) : (
                     '—'
                   )}

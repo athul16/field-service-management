@@ -75,14 +75,19 @@ public class ShiftService {
                 site.getName(),
                 saved.getClockInAt(),
                 saved.getClockOutAt(),
-                saved.getClockOutPhotoUrl(),
+                List.of(),
                 saved.getStatus().name(),
                 saved.getConfirmedAt());
     }
 
-    /** One atomic request: upload the photo, then mark the shift completed — no orphaned photo if either step fails on its own. */
+    private static final int MAX_CLOCK_OUT_PHOTOS = 3;
+
+    /** One atomic request: upload each photo, then mark the shift completed — no orphaned photos if any step fails on its own. */
     @Transactional
-    public ShiftResponse clockOut(Profile worker, UUID shiftId, MultipartFile photo) {
+    public ShiftResponse clockOut(Profile worker, UUID shiftId, List<MultipartFile> photos) {
+        if (photos.isEmpty() || photos.size() > MAX_CLOCK_OUT_PHOTOS) {
+            throw new IllegalArgumentException("Attach between 1 and " + MAX_CLOCK_OUT_PHOTOS + " photos");
+        }
         Shift shift = shiftRepository.findById(shiftId)
                 .orElseThrow(() -> new NotFoundException("No shift found with that id"));
         if (!shift.getWorkerId().equals(worker.getId())) {
@@ -92,9 +97,12 @@ public class ShiftService {
             throw new IllegalArgumentException("That shift is already completed");
         }
 
-        String photoUrl = photoStorageService.store(worker.getId(), shiftId, photo);
+        List<String> photoUrls = photos.stream()
+                .map(photo -> photoStorageService.store(worker.getId(), shiftId, photo))
+                .toList();
 
-        shiftRepository.updateClockOut(shiftId, Instant.now(), photoUrl);
+        shiftRepository.insertPhotos(shiftId, photoUrls);
+        shiftRepository.updateClockOut(shiftId, Instant.now());
         return shiftRepository.findResponseById(shiftId);
     }
 

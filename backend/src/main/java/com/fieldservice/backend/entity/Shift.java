@@ -10,7 +10,6 @@ public class Shift {
     private UUID siteId;
     private Instant clockInAt;
     private Instant clockOutAt;
-    private String clockOutPhotoUrl;
 
     /**
      * The DB additionally enforces this via shifts_one_open_per_worker_idx
@@ -62,14 +61,6 @@ public class Shift {
 
     public void setClockOutAt(Instant clockOutAt) {
         this.clockOutAt = clockOutAt;
-    }
-
-    public String getClockOutPhotoUrl() {
-        return clockOutPhotoUrl;
-    }
-
-    public void setClockOutPhotoUrl(String clockOutPhotoUrl) {
-        this.clockOutPhotoUrl = clockOutPhotoUrl;
     }
 
     public ShiftStatus getStatus() {
